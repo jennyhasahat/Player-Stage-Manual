@@ -1,0 +1,23 @@
+To compile simple.c:
+ gcc -o simple `pkg-config --cflags players` simple.c `pkg-config --libs
+ playerc`
+
+(or more easily)
+    make simple
+
+To run simple:
+ player simple.cfg (in one window)
+ ./simple (in another window)
+
+
+To compile example0.cc:
+    g++ `pkg-config --cflags playerc++` -g    example0.cc  `pkg-config --libs playerc++` -o example0
+
+(or more easily)
+    make example0
+
+To run example0:
+ player simple.cfg (in one window)
+ ./example0
+
+

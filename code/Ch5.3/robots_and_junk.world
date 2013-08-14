@@ -17,8 +17,8 @@ window
 # load an environment bitmap
 floorplan
 (
-	bitmap "./bitmaps/cave.png" 
-	size [15 15 0.5]
+	bitmap "../bitmaps/cave.png" 
+	size [15 15 1.5]
 )
 
 bigbob
@@ -32,8 +32,8 @@ bigbob
 define orange model
 (
 	# this is a picture of a black circle
-	bitmap "bitmaps/circle.png"
-	size [0.15 0.15 0.15]
+	bitmap "../bitmaps/circle.png"
+	size [0.05 0.05 0.15]
 	color "orange"
 )
 
@@ -52,7 +52,7 @@ define carton model
 	)
 	
 	# average litre carton size is ~ 20cm x 10cm x 5cm
-	size [0.1 0.2 0.2]
+	size [0.05 0.10 0.2]
 	
 	color "DarkBlue"
 )

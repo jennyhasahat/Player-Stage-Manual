@@ -1,0 +1,107 @@
+# bigbob5.world
+# Author: Kevin Nickels
+# Date: 1 Aug 2013
+
+# Test for blobfinder definition, p26/27
+
+# To visualize, you'll want to start with "player bigbob5.cfg" in one
+# window, and start "playerv --blobfinder:0" in another window
+
+define bigbobs_eyes blobfinder
+(
+	colors_count 2
+	colors ["orange" "DarkBlue"]
+	image [160 120] # resolution
+	range 5.00 		 # meters
+	fov 60 # fov (in unit_angle (degrees by def))
+	)
+
+
+define bigbob position
+(
+		  # actual size
+		  size [1.25 1 1]
+		  # centre of rotation offset
+		  origin [0.125 0 0 0]
+
+		  # the shape of Bigbob
+		  block
+		  (
+					 points 6
+					 point[5] [0 0]
+					 point[4] [0 1]
+					 point[3] [0.75 1]
+					 point[2] [1 0.75]
+					 point[1] [1 0.25]
+					 point[0] [0.75 0]
+					 z [0 1]
+		  )
+		  # top tooth
+		  block
+		  (
+					 points 4
+					 point[3] [1 0.75]
+					 point[2] [1.25 0.75]
+					 point[1] [1.25 0.625]
+					 point[0] [1 0.625]
+					 z [0 0.5]
+		  )
+		  # bottom tooth
+		  block
+		  (
+					 points 4
+					 point[3] [1 0.375]
+					 point[2] [1.25 0.375]
+					 point[1] [1.25 0.25]
+					 point[0] [1 0.25]
+					 z [0 0.5]
+		  )
+		  #positional things
+		  drive "diff"
+
+		  #sensors attached to bigbob
+		  bigbobs_eyes( ) # pose [0 0 0 0] is default
+)
+
+
+bigbob
+(
+		  name "bob1"
+		  pose [ -3 0 0 45]
+		  color "green"
+)
+
+
+define orange model
+(
+		  bitmap "../bitmaps/circle.png"
+		  size [0.150 0.150 1.150]
+		  color "orange"
+)
+
+define carton model
+(
+		  # a carton is rectangular
+		  # so make a square shape and use size[]
+		  block
+		  (
+					 points 4
+					 point[0] [1 0]
+					 point[1] [1 1]
+					 point[2] [0 1]
+					 point[3] [0 0]
+					 z [0 1]
+		  )
+		  ## average litre carton size is ~ 20cm x 10cm x 5cm
+		  size [0.100 0.200 1.200]
+		  color "DarkBlue"
+)
+
+orange(name "orange1" pose [0 0 0 0])
+#orange(name "orange2" pose [-2.000 -5.000 0 0])
+#orange(name "orange3" pose [-3.000 -5.000 0 0])
+#orange(name "orange4" pose [-4.000 -5.000 0 0])
+carton(name "carton1" pose [0 1 0 0])
+#carton(name "carton2" pose [-2.000 -3.000 0 0])
+#carton(name "carton3" pose [-2.000 -2.000 0 0])
+#carton(name "carton4" pose [-2.000 -1.000 0 0])

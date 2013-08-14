@@ -1,0 +1,159 @@
+# bigbob7.world
+# Author: Kevin Nickels
+# Date: 1 Aug 2013
+
+# This world has orange and carton models added
+# See p33 of manual
+#
+# To visualize, you'll want to start with "player bigbob6.cfg" in one
+# window, and start "playerv --ranger:0 --ranger:1 --blobfinder:0" in another window
+
+# configure the GUI window
+window
+(
+    show_data 1
+    scale 40.000
+    center [-3 -3]
+)
+
+define bigbobs_sonar sensor
+(
+    # define the size of each transducer [xsize ysize zsize] in meters
+    size [0.01 0.05 0.01 ] 
+    # define the range bounds [min max]
+    range [0.3 2.0]
+    # define the angular field of view (by default in degrees)
+    fov 10
+    # define the color that ranges are drawn in the gui
+    color_rgba [ 0 1 0 0.5] 
+)
+
+define bigbobs_sonars ranger
+( 
+  # one line for each sonar [xpos ypos zpos heading]
+  bigbobs_sonar( pose [ 0.75 0.1875 0 0])
+  bigbobs_sonar( pose [ 0.75 -0.1875 0 0])
+  bigbobs_sonar( pose [ 0.25 0.5 0 30])
+  bigbobs_sonar( pose [ 0.25 -0.5 0 -30])
+)
+
+define bigbobs_eyes blobfinder
+(
+	colors_count 2
+	colors ["orange" "DarkBlue"]
+	image [160 120] # resolution
+	range 5.00 		 # meters
+	fov 60 # fov (in unit_angle (degrees by def))
+	)
+
+define bigbobs_one_laser sensor
+(
+    # define the size of each transducer [xsize ysize zsize] in meters
+    size [0.025 0.025 0.025]
+    # define the range bounds [min max]
+    range [0 0.25]
+    # define the angular field of view (by default in degrees)
+    fov 20
+    # define the color that ranges are drawn in the gui
+    color_rgba [ 1 0 0 0.5] 
+)
+
+define bigbobs_laser ranger
+( 
+  # one line for each laser [xpos ypos zpos heading]
+  bigbobs_one_laser( pose [ 0.625 0.125 -0.975 270 ])
+)
+
+define bigbob position
+(
+		  # actual size
+		  size [1.250 1.000 1.000]
+		  # centre of rotation offset
+		  origin [0.125 0.000 0.000 0.000]
+
+		  # the shape of Bigbob
+		  block
+		  (
+					 points 6
+					 point[5] [0 0]
+					 point[4] [0 1]
+					 point[3] [0.75 1]
+					 point[2] [1 0.75]
+					 point[1] [1 0.25]
+					 point[0] [0.75 0]
+					 z [0 1]
+		  )
+		  # top tooth
+		  block
+		  (
+					 points 4
+					 point[3] [1 0.75]
+					 point[2] [1.25 0.75]
+					 point[1] [1.25 0.625]
+					 point[0] [1 0.625]
+					 z [0 0.5]
+		  )
+		  # bottom tooth
+		  block
+		  (
+					 points 4
+					 point[3] [1 0.375]
+					 point[2] [1.25 0.375]
+					 point[1] [1.25 0.25]
+					 point[0] [1 0.25]
+					 z [0 0.5]
+		  )
+		  #positional things
+		  drive "diff"
+
+		  #sensors attached to bigbob
+		  bigbobs_sonars( ) 
+          bigbobs_eyes( )
+          bigbobs_laser( )
+)
+
+
+bigbob
+(
+		  name "bob1"
+		  pose [ -5.350 -1.340 0.000 -45.000]
+		  color "green"
+)
+
+
+define orange model
+(
+		  bitmap "../bitmaps/space_invader.png"
+		  size [0.150 0.150 1.150]
+		  color "orange"
+          #ranger_return -1 # invisible
+          ranger_return 1.000
+)
+
+define carton model
+(
+		  # a carton is rectangular
+		  # so make a square shape and use size[]
+		  block
+		  (
+					 points 4
+					 point[0] [1 0]
+					 point[1] [1 1]
+					 point[2] [0 1]
+					 point[3] [0 0]
+					 z [0 1]
+		  )
+		  ## average litre carton size is ~ 20cm x 10cm x 5cm
+		  size [0.100 0.200 1.200]
+		  color "DarkBlue"
+)
+
+orange(name "orange1" pose [-1.000 -5.000 0.000 0.000])
+orange(name "orange2" pose [-2.000 -5.000 0.000 0.000])
+orange(name "orange3" pose [-3.000 -5.000 0.000 0.000])
+orange(name "orange4" pose [-4.000 -5.000 0.000 0.000])
+carton(name "carton1" pose [-2.000 -4.000 0.000 0.000])
+carton(name "carton2" pose [-2.000 -3.000 0.000 0.000])
+carton(name "carton3" pose [-2.000 -2.000 0.000 0.000])
+carton(name "carton4" pose [-2.000 -1.000 0.000 0.000])
+

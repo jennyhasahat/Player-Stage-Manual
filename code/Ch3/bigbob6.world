@@ -1,0 +1,75 @@
+# bigbob6.world
+# Author: Kevin Nickels
+# Date: 1 Aug 2013
+
+# This model has sonar, blobfinder, and laser
+# See p27-30 of manual
+#
+# To visualize, you'll want to start with "player bigbob6.cfg" in one
+# window, and start "playerv --ranger:0 --ranger:1 --blobfinder:0" in another window
+
+include "map.inc"
+include "bigbob.inc"
+
+# size of the whole simulation
+size [15 15]
+
+# configure the GUI window
+window
+(
+    size [700 700]
+    show_data 1
+    scale 35
+)
+
+# load an environment bitmap
+floorplan
+(
+    bitmap "../bitmaps/cave.png"
+    size [15 15 0.5]
+)
+
+bigbob
+(
+		  name "bob1"
+          pose [-5 -6 0 45]
+		  color "green"
+)
+
+
+define orange model
+(
+		  bitmap "../bitmaps/circle.png"
+		  size [0.150 0.150 1.150]
+		  color "orange"
+          #ranger_return -1 # invisible
+          ranger_return 1
+)
+
+define carton model
+(
+		  # a carton is rectangular
+		  # so make a square shape and use size[]
+		  block
+		  (
+					 points 4
+					 point[0] [1 0]
+					 point[1] [1 1]
+					 point[2] [0 1]
+					 point[3] [0 0]
+					 z [0 1]
+		  )
+		  ## average litre carton size is ~ 20cm x 10cm x 5cm
+		  size [0.100 0.200 1.200]
+		  color "DarkBlue"
+)
+
+#orange(name "orange1" pose [0 0 0 0])
+#orange(name "orange2" pose [-2.000 -5.000 0 0])
+#orange(name "orange3" pose [-3.000 -5.000 0 0])
+#orange(name "orange4" pose [-4.000 -5.000 0 0])
+#carton(name "carton1" pose [0 1 0 0])
+#carton(name "carton2" pose [-2.000 -3.000 0 0])
+#carton(name "carton3" pose [-2.000 -2.000 0 0])
+#carton(name "carton4" pose [-2.000 -1.000 0 0])
+

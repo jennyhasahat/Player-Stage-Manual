@@ -1,0 +1,71 @@
+# bigbob8.world
+# demo of two robots in one world - see p40 of tutorial
+# Author: Kevin Nickels
+# Date: 1 Aug 2013
+
+# To visualize, you'll want to run (in separate windows):
+# > player bigbob8.cfg
+# > playerv -p 6665 --position2d:0 --ranger:0 --ranger:1
+# > playerv -p 6666 --position2d:0 --ranger:0 --ranger:1
+
+include "map.inc"
+include "bigbob.inc"
+
+# configure the GUI window
+window
+(
+    show_data 1
+    size [700 700]
+    scale 35
+)
+# load an environment bitmap
+floorplan
+(
+    bitmap "../bitmaps/cave.png"
+    size [15 15 0.5]
+)
+# load in our robots
+bigbob
+(
+    name "bob1"
+    pose [-5 -6 0 45]
+    color "green"
+)
+bigbob
+(
+    name "bob2"
+    pose [+5 +6 0 0]
+    color "blue"
+)
+
+
+define orange model
+(
+	bitmap "../bitmaps/circle.png"
+	size [0.150 0.150 1.150]
+	color "orange"
+    ranger_return 1
+)
+
+define carton model
+(
+    block (points 4
+      point[0] [1 0]
+      point[1] [1 1]
+      point[2] [0 1]
+      point[3] [0 0]
+      z [0 1]
+      )
+    size [0.1 0.2 1.2]
+	color "DarkBlue"
+    ranger_return 1
+)
+
+orange(name "orange1" pose [-1 -5 0 0])
+orange(name "orange2" pose [-2 -5 0 0])
+orange(name "orange3" pose [-3 -5 0 0])
+orange(name "orange4" pose [-4 -5 0 0])
+carton(name "carton1" pose [-2 -4 0 0])
+carton(name "carton2" pose [-2 -3 0 0])
+carton(name "carton3" pose [-2 -2 0 0])
+carton(name "carton4" pose [-2 -1 0 0])

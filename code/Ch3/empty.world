@@ -11,6 +11,6 @@ window
 # load an environment bitmap
 floorplan
 (
-	bitmap "bitmaps/cave.png" 
+	bitmap "../bitmaps/cave.png" 
 	size [15 15 0.5]
 )

@@ -1,0 +1,51 @@
+# Desc: Player configuration file for controlling Stage devices
+# Author:  K Nickels
+# Date: 1 August 2013
+
+# To visualize, you'll want to start with "player bigbob4_gripper.cfg" in one
+# window, and start "playerv --gripper:0" in another window
+
+define bigbob position
+(
+		  # actual size
+		  size [1.25 1 1]
+		  # centre of rotation offset
+		  origin [0.125 0 0 0]
+
+		  # the shape of Bigbob
+		  block
+		  (
+					 points 6
+					 point[5] [0 0]
+					 point[4] [0 1]
+					 point[3] [0.75 1]
+					 point[2] [1 0.75]
+					 point[1] [1 0.25]
+					 point[0] [0.75 0]
+					 z [0 1]
+		  )
+		  #positional things
+		  drive "diff"
+)
+
+define puck model (
+ size [0.08 0.08 0.1]
+ gripper_return 1
+ gui_move 1
+ gui_nose 0
+ fiducial_return 10
+)
+
+puck (pose [2 2 0 0] color "red")
+puck (pose [2 3 0 0] color "green")
+puck (pose [2 4 0 0] color "blue")
+
+bigbob
+(
+		  name "bob1"
+		  pose [ 0 0 0 0]
+		  color "green"
+          gripper (pose [0.9 0 -0.9 0] color "gray")
+)
+
+

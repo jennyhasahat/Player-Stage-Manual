@@ -1,0 +1,29 @@
+# bigbob1.world
+# Author: Kevin Nickels
+# Date: 1 Aug 2013
+
+# Test for p21 block definition
+# Minimal definition
+# run as "stage bigbob1.world"
+
+define bigbob position
+(
+		  block
+		  (
+					 points 6
+					 point[0] [0 0]
+					 point[1] [0 1]
+					 point[2] [0.75 1]
+					 point[3] [1 0.75]
+					 point[4] [1 0.25]
+					 point[5] [0.75 0]
+					 z [0 1]
+		  )
+)
+
+bigbob
+(
+		  name "bob1"
+		  pose [ 0 0 0 0]
+		  color "green"
+)

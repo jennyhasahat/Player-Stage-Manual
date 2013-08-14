@@ -1,0 +1,80 @@
+# Test for p25/26 ranger defn
+#
+# This has fiducial only
+#
+# To visualize, you'll want to start with "player bigbob4_fiducial.cfg" in one
+# window, and start "playerv --fiducial:0" in another window
+
+define bigbobs_fiducial fiducial
+(
+    range_min 1.0
+    range_max 8.0
+    range_max_id 5.0
+    fov 90
+    ignore_zloc 1
+)
+
+define bigbob position
+(
+		  # actual size
+		  size [1.25 1 1]
+		  # centre of rotation offset
+		  origin [0.125 0 0 0]
+
+		  # the shape of Bigbob
+		  block
+		  (
+					 points 6
+					 point[5] [0 0]
+					 point[4] [0 1]
+					 point[3] [0.75 1]
+					 point[2] [1 0.75]
+					 point[1] [1 0.25]
+					 point[0] [0.75 0]
+					 z [0 1]
+		  )
+		  # top tooth
+		  block
+		  (
+					 points 4
+					 point[3] [1 0.75]
+					 point[2] [1.25 0.75]
+					 point[1] [1.25 0.625]
+					 point[0] [1 0.625]
+					 z [0 0.5]
+		  )
+		  # bottom tooth
+		  block
+		  (
+					 points 4
+					 point[3] [1 0.375]
+					 point[2] [1.25 0.375]
+					 point[1] [1.25 0.25]
+					 point[0] [1 0.25]
+					 z [0 0.5]
+		  )
+		  #positional things
+		  drive "diff"
+
+		  #sensors attached to bigbob
+		  bigbobs_fiducial( pose [0.5 0 0 0] ) # pose [0 0 0 0] is default
+)
+
+
+bigbob
+(
+		  name "bob1"
+		  pose [ 0 -4 0 66]
+		  color "green"
+)
+
+# default fiducial in environment
+define beacon model
+(
+    size [0.2 0.2 1]
+    color "LightBlue"
+    fiducial_return 2
+)
+beacon( name "beacon2" pose [2 -2 0 0])
+beacon( name "beacon3" pose [2 -1 0 0] fiducial_return 3) # override id on this one 
+beacon( name "beacon4" pose [2 0 0 0])

@@ -1,0 +1,125 @@
+# bigbob4.world
+# Author: Kevin Nickels
+# Date: 1 Aug 2013
+
+# Test for p25/26 ranger defn
+#
+# This has sonar only
+#
+# To visualize, you'll want to start with "player bigbob4.cfg" in one
+# window, and start "playerv --ranger:0" in another window
+
+# configure the GUI window
+window
+(
+    show_data 1
+    scale 40
+)
+
+define bigbobs_sonar sensor
+(
+    # define the size of each transducer [xsize ysize zsize] in meters
+    size [0.01 0.05 0.01 ] 
+    # define the range bounds [min max]
+    range [0.3 2.0]
+    # define the angular field of view (by default in degrees)
+    fov 10
+    # define the color that ranges are drawn in the gui
+    color_rgba [ 0 1 0 0.5] 
+)
+
+define bigbobs_sonars ranger
+( 
+  # one line for each sonar [xpos ypos zpos heading]
+  bigbobs_sonar( pose [ 0.75 0.1875 0 0])
+  bigbobs_sonar( pose [ 0.75 -0.1875 0 0])
+  bigbobs_sonar( pose [ 0.25 0.5 0 30])
+  bigbobs_sonar( pose [ 0.25 -0.5 0 -30])
+)
+
+
+define bigbob position
+(
+		  # actual size
+		  size [1.250 1.000 1.000]
+		  # centre of rotation offset
+		  origin [0.125 0.000 0.000 0.000]
+
+		  # the shape of Bigbob
+		  block
+		  (
+					 points 6
+					 point[5] [0 0]
+					 point[4] [0 1]
+					 point[3] [0.75 1]
+					 point[2] [1 0.75]
+					 point[1] [1 0.25]
+					 point[0] [0.75 0]
+					 z [0 1]
+		  )
+		  # top tooth
+		  block
+		  (
+					 points 4
+					 point[3] [1 0.75]
+					 point[2] [1.25 0.75]
+					 point[1] [1.25 0.625]
+					 point[0] [1 0.625]
+					 z [0 0.5]
+		  )
+		  # bottom tooth
+		  block
+		  (
+					 points 4
+					 point[3] [1 0.375]
+					 point[2] [1.25 0.375]
+					 point[1] [1.25 0.25]
+					 point[0] [1 0.25]
+					 z [0 0.5]
+		  )
+		  #positional things
+		  drive "diff"
+
+		  #sensors attached to bigbob
+		  bigbobs_sonars( ) # pose [0 0 0 0] is default
+)
+
+
+bigbob
+(
+		  name "bob1"
+		  pose [ -1.000 0.000 0.000 0.000]
+		  color "green"
+)
+
+
+define orange model
+(
+		  bitmap "../bitmaps/circle.png"
+		  size [0.150 0.150 1.150]
+		  color "orange"
+          #ranger_return -1 # invisible
+          ranger_return 0.100 # visible (anything >=0 affects Intensity() not Range())
+)
+
+define carton model
+(
+		  # a carton is rectangular
+		  # so make a square shape and use size[]
+		  block
+		  (
+					 points 4
+					 point[0] [1 0]
+					 point[1] [1 1]
+					 point[2] [0 1]
+					 point[3] [0 0]
+					 z [0 1]
+		  )
+		  ## average litre carton size is ~ 20cm x 10cm x 5cm
+		  size [0.100 0.200 1.200]
+		  color "DarkBlue"
+          ranger_return 1.000
+)
+
+orange(name "orange1" pose [0.5 0.2 0.0 0.0])
+carton(name "carton1" pose [0.0 1.0 0.0 0.0])

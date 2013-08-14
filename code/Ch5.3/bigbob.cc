@@ -1,11 +1,13 @@
 // Desc: Bigbob code for controlling a junk finding robot.
 // Author:  Jennifer Owen
 // Date: 16/04/2010
+// Updates (Stage4) Kevin Nickels 7 Aug 2013
 
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
 #include <libplayerc++/playerc++.h>
+//#include <values.h>
 
 struct Item
 {
@@ -55,7 +57,7 @@ want this function to change.
 @param &sp The sonar proxy that you want this function to monitor.
 */
 void AvoidObstacles(double *forwardSpeed, double *turnSpeed, \
-      SonarProxy &sp)
+      RangerProxy &sp)
 {
       //will avoid obstacles closer than 40cm
       double avoidDistance = 0.4;
@@ -112,8 +114,8 @@ void MoveToItem(double *forwardSpeed, double *turnSpeed, \
       int i, centre;
       int noBlobs = bfp.GetCount();
       playerc_blobfinder_blob_t blob;
-      int turningSpeed = 10;
-      
+      int turningSpeed = 5; // in deg/s
+
       /*number of pixels away from the image centre a blob
       can be to be in front of the robot*/
       int margin = 10;
@@ -127,13 +129,15 @@ void MoveToItem(double *forwardSpeed, double *turnSpeed, \
             //get blob from proxy
             playerc_blobfinder_blob_t currBlob = bfp[i];
             
-            if(currBlob.area > biggestBlobArea)
+            // (.area is a negative cast into an unsigned int! oops.)
+            if( abs((int)currBlob.area) > biggestBlobArea)
             {
                   biggestBlob = i;
-                  biggestBlobArea = currBlob.area;
+                  biggestBlobArea = abs((int)currBlob.area);
             }
       }
       blob = bfp[biggestBlob];
+      //printf("biggest blob is %i with area %d\n",biggestBlob,biggestBlobArea);
             
       // find centre of image
       centre = bfp.GetWidth()/2;
@@ -142,12 +146,15 @@ void MoveToItem(double *forwardSpeed, double *turnSpeed, \
       /*if the blob's centre is within some margin of the image 
       centre then move forwards, otherwise turn so that it is 
       centred. */
+      //printf("blob.x=%d, c=%d\n",blob.x,centre);
+
       //blob to the left of centre
       if(blob.x < centre-margin)
       {
             *forwardSpeed = 0;
             //turn left
             *turnSpeed = turningSpeed;
+            //printf("turning left\n");
       }
       //blob to the right of centre
       else if(blob.x > centre+margin)
@@ -155,12 +162,14 @@ void MoveToItem(double *forwardSpeed, double *turnSpeed, \
             *forwardSpeed = 0;
             //turn right
             *turnSpeed = -turningSpeed;
+            //printf("turning right\n");
       }
       //otherwise go straight ahead
       else
       {
-            *forwardSpeed = 0.5;
+            *forwardSpeed = 0.1;
             *turnSpeed = 0;      
+            //printf("straight on\n");
       }
       
       return;
@@ -300,9 +309,9 @@ int main(int argc, char *argv[])
       PlayerClient    robot("localhost", 6665);
 
       Position2dProxy p2dProxy(&robot,0);
-      SonarProxy      sonarProxy(&robot,0);
+      RangerProxy      sonarProxy(&robot,0);
       BlobfinderProxy blobProxy(&robot,0);
-      LaserProxy      laserProxy(&robot,0);
+      RangerProxy      laserProxy(&robot,1);
       SimulationProxy simProxy(&robot,0);
       
       double forwardSpeed, turnSpeed;
@@ -319,10 +328,8 @@ int main(int argc, char *argv[])
       p2dProxy.RequestGeom();
       sonarProxy.RequestGeom();
       laserProxy.RequestGeom();
+      laserProxy.RequestConfigure();
       //blobfinder doesn't have geometry
-	
-      /*here so that laserProxy[90] doesn't segfault on first loop*/
-      robot.Read();
 	
       while(true)
       {		
@@ -343,7 +350,7 @@ int main(int argc, char *argv[])
             }
       	
       	
-            if(laserProxy[90] < 0.25)
+            if(laserProxy.GetRangeCount() >= 90 && laserProxy[90] < 0.25)
             {
                   int destroyThis;
 

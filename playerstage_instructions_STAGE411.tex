@@ -1,0 +1,2328 @@
+\documentclass[a4paper]{report}
+
+\title{How to Use Player/Stage\\ 
+\large 4th Edition \\
+\small Using Player 3.0.2 and Stage 4.1.1}
+\author{Jennifer Owen \& Kevin Nickels}
+
+
+\usepackage{xspace}
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage{url}
+%\usepackage{tocbibind}
+\usepackage[perpage]{footmisc}
+\usepackage[british]{babel}
+\usepackage[ pdftex, plainpages = false, pdfpagelabels, 
+%                  pdfpagelayout = OneColumn, % display single page, advancing flips the page - Sasa Tomic
+                 bookmarks,
+                 bookmarksopen = true,
+                 bookmarksnumbered = true,
+                 breaklinks = true,
+                 linktocpage,
+                 pagebackref,
+                 colorlinks = true,
+                 linkcolor = blue,
+                 urlcolor  = blue,
+                 citecolor = red,
+                 anchorcolor = green,
+                 hyperindex = true,
+                 hyperfigures
+                 ]{hyperref} 
+
+%\usepackage{draftwatermark}
+
+% for my watermarks - the above fails!!
+\usepackage{fancyhdr}
+\setlength{\headheight}{15pt}
+\pagestyle{fancyplain}
+\fancyhf{}
+\lhead{ \Huge DRAFT }
+\cfoot{\thepage}
+
+
+
+
+\newcommand{\plst}{Player/Stage\xspace}
+\newcommand{\pl}{Player\xspace}
+
+%\newcommand{\fpbox}[1]{\framebox{\parbox{\linewidth}{#1}}}
+\newcommand{\fpbox}[1]{\framebox{\begin{minipage}[t]{\linewidth}{#1}\end{minipage}}}
+\newcommand{\tiobox}[1]{\framebox{\begin{minipage}[t]{0.9\linewidth}{{\bf TRY IT OUT}\\#1}\end{minipage}}}
+
+\begin{document}
+
+\maketitle
+
+
+This document is intended as a guide for anyone learning \plst for the first time. It explains the process of setting up a new simulation environment and how to then make your simulation do something, using a case study along the way. Whilst it is aimed at \plst users, those just wishing to use \pl on their robot may also find sections of this document useful (particularly the parts about coding with Player).
+
+If you have any questions about using \plst there is a guide to getting help from the \pl community here:
+\begin{center}
+	\url{http://playerstage.sourceforge.net/wiki/Getting_help}
+\end{center}
+This edition of the manual uses Stage version 4.1.1 as there are significant differences with the previous versions of Stage and the previous edition of this manual is now out of date. 
+
+\tableofcontents
+
+\chapter{Introduction}\label{sec:Introduction}
+\plst is a robot simulation tool, it comprises of one program, \pl, which is a \emph{Hardware Abstraction Layer}. That means that it talks to the bits of hardware on the robot (like a claw or a camera) and lets you control them with your code, meaning you don't need to worry about how the various parts of the robot work. Stage is a plugin to \pl which listens to what \pl is telling it to do and turns these instructions into a simulation of your robot. It also simulates sensor data and sends this to \pl which in turn makes the sensor data available to your code.
+
+A simulation then, is composed of three parts:
+\begin{itemize}
+\item Your code. This talks to \pl.
+\item \pl. This takes your code and sends instructions to a robot. From the robot it gets sensor data and sends it to your code.
+\item Stage. Stage interfaces with \pl in the same way as a robot's hardware would. It receives instructions from \pl and moves a simulated robot in a simulated world, it gets sensor data from the robot in the simulation and sends this to \pl.
+\end{itemize}
+Together \pl and Stage are called \plst, and they make a simulation of your robots.
+
+These instructions will be focussing on how to use \plst to make a simulation, but hopefully this will still be a useful resource for anyone just using \pl (which is the same thing but on a real robot, without any simulation software).
+
+\section{A Note on Installing \plst}
+Instructions on how to install \plst onto your computer aren't really the focus of this document. It is very difficult though. If you're lucky the install will work first time but there are a lot of dependencies which may need installing. For computers running Ubuntu there is a very good set of instructions here (including a script for downloading the many prerequisites):
+\begin{center}
+\url{http://www.control.aau.dk/~tb/wiki/index.php/Installing_Player_and_Stage_in_Ubuntu}
+\end{center}
+For OSX users you might find the following install instructions useful:
+\begin{center}
+\url{http://alanwinfield.blogspot.com/2009/07/installing-playerstage-on-os-x-with.html}
+\end{center}
+Alternatively, you could try the suggestions on the \pl ``getting help'' page:
+\begin{center}
+	\url{http://playerstage.sourceforge.net/wiki/Getting_help}
+\end{center}
+
+\section{A Note about TRY IT OUT boxes}
+There will be boxes scattered throughout this tutorial labeled TRY IT OUT
+that explain how to run examples. You'll need to download the example code
+\url{tutorial-4-src.zip} from the place where you got this
+document\footnote{or from
+\url{http://www-users.cs.york.ac.uk/jowen/player/tutorial-4-src.zip}},
+which will contain the files. In these boxes, you'll be given commands to
+type in a terminal
+window (or bash shell). They'll be shown prefixed with a carrot {\tt ">"} For
+example, \\
+{\tt > ls } \\
+Means to go to a terminal window and type the command given (ls), without
+the {\tt >} character, then hit return.
+
+In many cases, you'll need two windows, since the first command (player
+configfile.cfg) doesn't quit till player is done.  
+
+\tiobox{First, you'll need to extract the sample code.  To do this, open a
+terminal and cd to the directory where you put the file {\tt
+tutorial-4-src.zip}, then extract using zip\footnote{Yes, there are
+GUI-based ways to do this too.  I won't cover them here.}: \\
+\\
+{\tt > mkdir \$HOME/tutorial-4}\footnote{I'll assume that you put this directory
+in your home directory.  If not, just replace the commands given with the
+appropriate directory.} \\
+{\tt > cd \$HOME/tutorial-4} \\
+{\tt > unzip \$HOME/Downloads/tutorial-4-src.zip}\footnote{Again, your specific path may differ.} \\
+{\tt > cd code} \\
+{\tt > ls} \\
+\\
+At this point, you should see five directories, {\tt Ch3 Ch4 Ch5.1 Ch5.2
+Ch5.3} which contain the code examples for the respective chapters, and
+one, {\tt bitmaps} that has pictures used in several different examples.}
+
+
+\tiobox{
+First we will run a world and configuration file that comes bundled with
+Stage. In your bash shell navigate to the Stage/worlds folder, by default
+(in Linux at least) this is /usr/local/share/stage/worlds. Once in the
+correct folder type the following command to run the ``simple world'' that
+comes with \plst: \\
+{\tt 
+> player simple.cfg
+}
+
+Assuming \plst is installed properly you should now have a window open
+which looks like Figure \ref{fig:BuildingAWorld:SimpleWorld}.  Congratulations,
+you can now build Player/Stage simulations! 
+}
+
+
+
+\chapter{The Basics}\label{sec:Basics}
+
+\section{Important File Types}\label{sec:Basics:FileTypes}
+In \plst there are 3 kinds of file that you need to understand to get going with \plst:
+\begin{itemize}
+	\item a .world file
+	\item a .cfg (configuration) file
+	\item a .inc (include) file
+\end{itemize}
+The .world file tells \plst what things are available to put in the world. In this file you describe your robot, any items which populate the world and the layout of the world. The .inc file follows the same syntax and format of a .world file but it can be \emph{included}. So if there is an object in your world that you might want to use in other worlds, such as a model of a robot, putting the robot description in a .inc file just makes it easier to copy over, it also means that if you ever want to change your robot description then you only need to do it in one place and your multiple simulations are changed too.
+
+The .cfg file is what \pl reads to get all the information about the robot that you are going to use.This file tells \pl which drivers it needs to use in order to interact with the robot, if you're using a real robot these drivers are built in to \pl\footnote{Or you can download or write your own drivers, but I'm not going to talk about how to do this here.}, alternatively, if you want to make a simulation, the driver is always Stage (this is how \pl uses Stage in the same way it uses a robot: it thinks that it is a hardware driver and communicates with it as such). The .cfg file tells \pl how to talk to the driver, and how to interpret any data from the driver so that it can be presented to your code. Items described in the .world file should be described in the .cfg file if you want your code to be able to interact with that item (such as a robot), if you don't need your code to interact with the item then this isn't necessary. The .cfg file does all this specification using interfaces and drivers, which will be discussed in the following section.
+
+\section{Interfaces, Drivers and Devices} \label{sec:Basics:InterfaceDriverDevices}
+\begin{itemize}
+\item Drivers are pieces of code that talk directly to hardware. These are built in to \pl so it is not important to know how to write these as you begin to learn \plst. The drivers are specific to a piece of hardware so, say, a laser driver will be different to a camera driver, and also different to a driver for a different brand of laser. This is the same as the way that drivers for graphics cards differ for each make and model of card. Drivers produce and read information which conforms to an ``interface''.
+
+\item Interfaces are a set way for a driver to send and receive information from \pl. Like drivers, interfaces are also built in to \pl and there is a big list of them in the \pl manual\footnote{\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/group__interfaces.html}}. They specify the syntax and semantics of how drivers and \pl interact.
+	
+\item A device is a driver that is bound to an interface so that \pl can talk to it directly. This means that if you are working on a real robot that you can interact with a real device (laser, gripper, camera etc) on the real robot, in a simulated robot you can interact with their simulations. 
+\end{itemize}
+
+The official documentation\footnote{\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/group__tutorial__interfaces.html}}\footnote{Actually, the official documentation still refers to the depreciated laser interface, but I've updated all the references in this manual to use the new ranger interface.} actually describes these three things quite well with an example\footnote{\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/group__tutorial__devices.html}}:
+
+\begin{quotation}
+Consider the ranger interface. This interface defines a format in which a planar range-sensor can return range readings (basically a list of ranges, with some meta-data). The ranger interface is just that: an interface. You can't do anything with it.
+
+Now consider the sicklms200 driver. This driver controls a SICK LMS200, which is particular planar range sensor that is popular in mobile robot applications. The sicklms200 driver knows how to communicate with the SICK LMS200 over a serial line and retrieve range data from it. But you don't want to access the range data in some SICK-specific format. So the driver also knows how to translate the retrieved data to make it conform to the format defined by the ranger interface.
+
+	The sicklms200 driver can be bound to the ranger interface \ldots to create a device, which might have the following address:
+
+	localhost:6665:ranger:0 
+	
+The fields in this address correspond to the entries in the \mbox{player\_devaddr\_t} structure: host, robot, interface, and index. The host and robot fields (localhost and 6665) indicate where the device is located. The interface field indicates which interface the device supports, and thus how it can be used. 
+Because you might have more than one laser, the index field allows you to pick among the devices that support the given interface and are located on the given host:robot Other lasers on the same host:robot would be assigned different indexes.
+\end{quotation}
+
+The last paragraph there gets a bit technical, but don't worry. \pl talks to parts of the robot using ports (the default port is 6665), if you're using Stage then \pl and Stage communicate through these ports (even if they're running on the same computer). 
+All this line does is tell \pl which port to listen to and what kind of data to expect. In the example it's laser data which is being transmitted on port 6665 of the computer that \pl is running on (localhost). 
+You could just as easily connect to another computer by using its IP address instead of ``localhost''. The specifics of writing a device address in this way will be described in Section \ref{sec:ConfigurationFile}.
+
+
+\chapter{Building a World} \label{sec:BuildingAWorld}
+
+First we will run a world and configuration file that comes bundled with Stage. In your bash shell navigate to the Stage/worlds folder, by default (in Linux at least) this is /usr/local/share/stage/worlds. Once in the correct folder type the following command to run the ``simple world'' that comes with \plst:
+\begin{verbatim}
+player simple.cfg
+\end{verbatim}
+Assuming \plst is installed properly you should now have a window open which looks Figure \ref{fig:BuildingAWorld:SimpleWorld}.
+\begin{figure}
+	\centering
+	\includegraphics[width=0.8\linewidth]{./pics/simpleworld.png}
+	\caption{The simple.cfg world after being run}
+	\label{fig:BuildingAWorld:SimpleWorld}
+\end{figure}
+
+Congratulations, you can now build Player/Stage simulations! 
+% TODO how did the stage simple.cfg automatically start running?
+% ctrl wander in simple.world causes this.  Commented on later.
+
+
+\section{Building an Empty World} \label{sec:BuildingAWorld:EmptyWorld}
+
+As you can see in Section \ref{sec:BuildingAWorld}, when we tell \pl to build a world we only give it the .cfg file as an input. This .cfg file needs to tell us where to find our .world file, which is where all the items in the simulation are described. To explain how to build a Stage world containing nothing but walls we will use an example.\newline
+To start building an empty world we need a .cfg file. First create a document called \verb|empty.cfg| and copy the following code into it:
+\begin{verbatim}
+driver
+(		
+   name "stage"
+   plugin "stageplugin"
+
+   provides ["simulation:0" ]
+
+   # load the named file into the simulator
+   worldfile "empty.world"	
+)
+\end{verbatim}
+The configuration file syntax is described in Section \ref{sec:ConfigurationFile}, but basically what is happening here is that your configuration file is telling \pl that there is a driver called \verb|stage| in the \verb|stageplugin| library, and this will give \pl data which conforms to the \verb|simulation| interface. To build the simulation \pl needs to look in the worldfile called \verb|empty.world| which is stored in the same folder as this .cfg. If it was stored elsewhere you would have to include a filepath, for example \verb|./worlds/empty.world|. Lines that begin with the hash symbol (\#) are comments.
+When you build a simulation, any simulation, in Stage the above chunk of code should always be the first thing the configuration file says. Obviously the name of the worldfile should be changed depending on what you called it though.
+
+Now a basic configuration file has been written, it is time to tell \plst what to put into this simulation. This is done in the .world file. 
+
+\subsection{Models} \label{sec:BuildingAWorld:EmptyWorld:Models}
+A worldfile is basically just a list of models that describes all the stuff in the simulation. This includes the basic environment, robots and other objects. The basic type of model is called ``model'', and you define a model using the following syntax:
+\begin{verbatim}
+define model_name model
+(
+   # parameters
+)
+\end{verbatim}
+This tells \plst that you are \verb|defining| a \verb|model| which you have called \verb|model_name|, and all the stuff in the round brackets are parameters of the model. To begin to understand \plst model parameters, let's look at the \verb|map.inc| file that comes with Stage, this contains the \verb\floorplan\ model, which is used to describe the basic environment of the simulation (i.e. walls the robots can bump into):
+\begin{verbatim}
+define floorplan model
+(
+  # sombre, sensible, artistic
+  color "gray30"
+
+  # most maps will need a bounding box
+  boundary 1
+
+  gui_nose 0
+  gui_grid 0
+  gui_move 0
+  gui_outline 0
+  gripper_return 0
+  fiducial_return 0
+  ranger_return 1
+)
+\end{verbatim}
+We can see from the first line that they are defining a \verb|model| called \verb|floorplan|. 
+\begin{itemize}
+\item \verb|color|: Tells \plst what colour to render this model, in this case it is going to be a shade of grey. 
+\item boundary: Whether or not there is a bounding box around the model. This is an example of a binary parameter, which means the if the number next to it is 0 then it is false, if it is 1 or over then it's true. So here we DO have a bounding box around our ``map'' model so the robot can't wander out of our map.
+\item \verb|gui_nose|: this tells \plst that it should indicate which way the model is facing. Figure \ref{fig:BuildingAWorld:EmptyWorld:Models:GUINose} shows the difference between a map with a nose and one without.
+\item \verb|gui_grid|: this will superimpose a grid over the model. Figure \ref{fig:BuildingAWorld:EmptyWorld:Models:GUIGrid} shows a map with a grid.
+\item \verb|gui_move|: this indicates whether it should be possible to drag and drop the model. Here it is 0, so you cannot move the map model once \plst has been run. In Section \ref{sec:BuildingAWorld} when the \plst example \verb|simple.cfg| was run it was possible to drag and drop the robot because its \verb|gui_move| variable was set to 1.
+\item \verb|gui_outline|: indicates whether or not the model should be outlined. This makes no difference to a map, but it can be useful when making models of items within the world.
+\item \verb|fiducial_return|: any parameter of the form some\_sensor\_return describes how that kind of sensor should react to the model. ``Fiducial'' is a kind of robot sensor which will be described later in Section \ref{sec:BuildingAWorld:BuildingRobot:RobotSensors}. Setting \verb|fiducial_return| to 0 means that the map cannot be detected by a fiducial sensor.
+\item \verb|ranger_return|: Setting \verb|ranger_return| to a negative
+      number indicates that a model cannot be seen by ranger sensors.
+      Setting \verb|ranger_return| to a number between 0 and 1
+      (inclusive)\footnote{Note: this means that {\tt ranger\_return 0}  
+      {\bf will allow} a ranger sensor to see the object --- the {\em
+      range} will get set, it'll just set the {\em intensity} of that return
+      to zero.  See Section \ref{sec:Coding:InteractingWithProxies:ranger}
+      for more details.}
+      controls the intensity of the return seen by a ranger sensor.
+\item \verb|gripper_return|: Like \verb|fiducial_return|, \verb|gripper_return| tells \plst that your model can be detected by the relevant sensor, i.e. it can be gripped by a gripper. Here \verb|gripper_return| is set to 0 so the map cannot be gripped by a gripper. 
+\end{itemize}
+
+\begin{figure}
+	\centering
+	\begin{minipage}[c]{0.45\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{./pics/empty_world/gui_nonose_example.png}
+		
+	\end{minipage}%
+	\hspace{0.05\linewidth}
+	\begin{minipage}[c]{0.45\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{./pics/empty_world/gui_nose_example.png} 
+	\end{minipage}	
+	\caption{The left picture shows an empty map without a nose. The right picture shows the same map with a nose to indicate orientation, this is the horizontal line from the centre of the map to the right, it shows that the map is actually facing to the right.}
+		\label{fig:BuildingAWorld:EmptyWorld:Models:GUINose}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.7\linewidth]{./pics/empty_world/gui_nonose_example.png}
+	\caption{An empty map with gui\_grid enabled. With gui\_grid disabled this would just be an empty white square.}
+	\label{fig:BuildingAWorld:EmptyWorld:Models:GUIGrid}
+\end{figure}
+
+To make use of the \verb|map.inc| file we put the following code into our world file:
+\begin{verbatim}
+include "map.inc"
+\end{verbatim}
+This inserts the \verb|map.inc| file into our world file where the include line is. This assumes that your worldfile and \verb|map.inc| file are in the same folder, if they are not then you'll need to include the filepath in the quotes. Once this is done we can modify our definition of the map model to be used in the simulation. For example:
+\begin{verbatim}
+floorplan
+(
+   bitmap "bitmaps/helloworld.png"
+   size [12 5 1]	
+)
+\end{verbatim}
+What this means is that we are using the model ``floorplan'', and making some extra definitions; both ``bitmap'' and ``size'' are parameters of a \plst model. Here we are telling \plst that we defined a bunch of parameters for a type of model called ``floorplan'' (contained in map.inc) and now we're using this ``floorplan'' model definition and adding a few extra parameters.
+\begin{itemize}
+\item \verb|bitmap|: this is the filepath to a bitmap, which can be type bmp, jpeg, gif or png. Black areas in the bitmap tell the model what shape to be, non-black areas are not rendered, this is illustrated in Figure \ref{fig:BuildingAWorld:EmptyWorld:Models:HelloWorld}. In the map.inc file we told the map that its ``color'' would be grey. This parameter does not affect how the bitmaps are read, \plst will always look for black in the bitmap, the \verb\color\ parameter just alters what colour the map is rendered in the simulation. 
+\item \verb|size|: This is the size \emph{in metres} of the simulation. All sizes you give in the world file are in metres, and they represent the actual size of things. If you have 3m x 4m robot testing arena that is 2m high and you want to simulate it then the \verb\size\ is [3 4 2]. The first number is the size in the $x$ dimension, the second is the $y$ dimension and the third is the $z$ dimension.
+\end{itemize}
+
+\begin{figure}
+	\centering
+	\begin{minipage}[c]{0.4\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{./pics/empty_world/writing.png}
+		
+	\end{minipage}%
+	\hspace{0.05\linewidth}
+	\begin{minipage}[c]{0.5\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{./pics/empty_world/helloworld.png} 
+	\end{minipage}	
+	\caption{The left image is our "helloworld.png" bitmap, the right image is what \plst interprets that bitmap as. The coloured areas are walls, the robot can move everywhere else.}
+		\label{fig:BuildingAWorld:EmptyWorld:Models:HelloWorld}
+\end{figure}
+
+A full list of model parameters and their descriptions can be found in the official Stage manual\footnote{\url{http://rtv.github.com/Stage/group__model.html}}. Most of the useful parameters have already been described here, however there are a few other types of model which are relevant to building simulations of robots, these will be described later in Section \ref{sec:BuildingAWorld:BuildingRobot}.
+
+
+\subsection{Describing the \plst Window} \label{sec:BuildingAWorld:EmptyWorld:PLSTWindow}
+
+The worldfile also can be used to describe the simulation window that \plst creates. \plst will automatically make a window for the simulation if you don't put any window details in the worldfile, however, it is often useful to put this information in anyway. This prevents a large simulation from being too big for the window, or to increase or decrease the size of the simulation.
+
+Like a model, a window is an inbuilt, high-level entity with lots of parameters. Unlike models though, there can be only one window in a simulation and only a few of its parameters are really needed. The simulation window is described with the following syntax:
+\begin{verbatim}
+window
+(
+   # parameters...
+)
+\end{verbatim}
+
+The two most important parameters for the window are \verb|size| and \verb|scale|.
+\begin{itemize}
+\item \verb|size|: This is the size the simulation window will be \emph{in pixels}. You need to define both the width and height of the window using the following syntax: \verb|size [width height]|. 
+\item \verb|scale|: This is how many metres of the simulated environment each pixel shows. The bigger this number is, the smaller the simulation becomes. The optimum value for the scale is $\frac{window\_size}{floorplan\_size}$ and it should be rounded downwards so the simulation is a little smaller than the window it's in, some degree of trial and error is needed to get this right. 
+\end{itemize}
+
+A full list of window parameters can be found in the Stage manual under ``WorldGUI''\footnote{\url{http://rtv.github.com/Stage/group__worldgui.html}}.
+
+\subsection{Making a Basic Worldfile}\label{sec:BuildingAWorld:EmptyWorld:BasicWorldfile}
+
+We have already discussed the basics of worldfile building: models and the window. There are just a few more parameters to describe which don't belong in either a model or a window description, these are optional though, and the defaults are pretty sensible.
+\begin{itemize}
+\item \verb|interval_sim|: This is how many simulated milliseconds there are between each update of the simulation window, the default is 100 milliseconds.
+\item \verb|interval_real|: This is how many real milliseconds there are between each update of the simulation window. Balancing this parameter and the \verb|interval\_sim| parameter controls the speed of the simulation. Again, the default value is 100 milliseconds, both these interval parameter defaults are fairly sensible, so it's not always necessary to redefine them.
+\end{itemize}
+The Stage manual contains a list of the high-level worldfile parameters\footnote{\url{http://rtv.github.com/Stage/group__world.html}}.\newline
+Finally, we are able to write a worldfile!
+\begin{verbatim}
+include "map.inc"
+
+# configure the GUI window
+window
+( 
+   size [700.000 700.000] 
+   scale 41
+)
+
+
+# load an environment bitmap
+floorplan
+(
+   bitmap "bitmaps/cave.png" 
+   size [15 15 0.5]
+)
+\end{verbatim}
+If we save the above code as empty.world (correcting any filepaths if necessary) we can run its corresponding empty.cfg file (see Section \ref{sec:BuildingAWorld:EmptyWorld}) to get the simulation shown in Figure \ref{fig:BuildingAWorld:EmptyWorld:BasicWorldfile:FinalEmptyWorld}.
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.7\linewidth]{./pics/empty_world/finalEmptyWorld.png} 
+	\caption{Our Empty World.}
+	\label{fig:BuildingAWorld:EmptyWorld:BasicWorldfile:FinalEmptyWorld}
+\end{figure}
+
+
+
+\section{Building a Robot} \label{sec:BuildingAWorld:BuildingRobot}
+
+In \plst a robot is just a slightly advanced kind of model, all the parameters described in Section \ref{sec:BuildingAWorld:EmptyWorld:Models} can still be applied. 
+
+\subsection{Sensors and Devices} \label{sec:BuildingAWorld:BuildingRobot:RobotSensors}
+
+There are six built-in kinds of model that help with building a robot, they are used to define the sensors and actuators that the robot has. These are associated with a set of model parameters which define by which sensors the model can be detected (these are the \verb\_return\s mentioned earlier). Each of these built in models acts as an \emph{interface} (see Section \ref{sec:Basics:InterfaceDriverDevices}) between the simulation and \pl. If your robot has one of these kinds of sensor on it, then you need to use the relevant model to describe the sensor, otherwise Stage and \pl won't be able to pass the data between each other. It is possible to write your own interfaces, but the stuff already included in \plst should be sufficient for most people's needs. A full list of interfaces that \pl supports can be found in the \pl manual\footnote{\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/group__interfaces.html}} although only the following are supported by the current distribution of Stage (version 4.1.X). Unless otherwise stated, these models use the \pl interface that shares its name:
+
+\subsubsection{camera}
+The camera model\footnote{\url{http://rtv.github.com/Stage/group__model__camera.html}}
+adds a camera to the robot model and allows your code to interact with the simulated camera. The camera parameters are as follows:
+\begin{itemize}
+\item \verb|resolution [x y]|: the resolution, in pixels, of the camera's image.
+\item \verb|range [min max]|: the minimum and maximum range that the camera can detect
+\item \verb|fov [x y]|: the field of view of the camera \emph{in DEGREES}.
+\item \verb|pantilt [pan tilt]|: angle, in degrees, where the camera is looking. Pan is the left-right positioning. So for instance pantilt [20 10] points the camera 20 degrees left and 10 degrees down.
+\end{itemize}
+
+\subsubsection{blobfinder}
+This\footnote{\url{http://rtv.github.com/Stage/group__model__blobfinder.html}}
+simulates colour detection software that can be run on the image from the
+robot's camera. It is not necessary to include a model of the camera in
+your description of the robot if you want to use a blobfinder, the
+blobfinder will work on its own. 
+
+In previous versions of Stage, there was a {\tt blob\_return}
+parameter to determine if a blobfinder could detect an object.  In Stage
+4.1.1, this does not seem to be the case.  However, you can simply set an
+object to be a color not listed in the {\tt colors[]} list to make it invisible
+to blobfinders.
+
+%The blobfinder can only find a model if its \verb|blob_return| parameter is true. 
+The parameters for the blobfinder are described in the Stage manual, but
+the most useful ones are here:
+\begin{itemize}
+      \item \verb|colors_count <int>|: the number of different colours the
+            blobfinder can detect
+      \item \verb|colors [ ]|: the names of the colours it can detect. This
+            is given to the blobfinder definition in the form
+            \verb|["black" "blue" "cyan"]|. These colour names are from the
+            built in X11 colour database rgb.txt. This is built in to
+            Linux.\footnote{rgb.txt can normally be found at
+            /usr/share/X11/rgb.txt assuming it's properly installed,
+            alternatively a Google search for ``rgb.txt'' will give you the
+            document.} 
+      \item \verb|image [x y]|: the size of the image from the camera, in pixels.
+      \item \verb|range <float>|: The maximum range that the camera can detect, in metres.
+      \item \verb|fov <float>|: field of view of the blobfinder 
+            \emph{in DEGREES}\footnote{Unlike the camera {\tt fov}, the
+            blobfinder {\tt fov} respects the {\tt unit\_angle} call as
+            described in
+            \url{http://playerstage.sourceforge.net/wiki/Writing\_configuration\_files\#Units}.
+            By default, the blobfinder {\tt fov} is in DEGREES.}
+           .
+\end{itemize}
+
+\subsubsection{fiducial} 
+A fiducial is a fixed point in an image, so the fiducial finder\footnote{\url{http://rtv.github.com/Stage/group__model__fiducial.html}} 
+simulates image processing software that locates fixed points in an image. The fiducialfinder is able to locate objects in the simulation whose \verb|fiducial_return| parameter is set to true. Stage also allows you to specify different types of fiducial using the \verb|fiducial_key| parameter of a model. This means that you can make the robots able to tell the difference between different fiducials by what key they transmit. The fiducial finder and the concept of \verb|fiducial_key|s is properly explained in the Stage manual. The fiducial sensors parameters are:
+\begin{itemize}
+\item \verb\range_min\: The minimum range at which a fiducial can be detected, in metres.
+\item \verb\range_max\: The maximum range at which a fiducial can be detected, in metres.
+\item \verb\range_max_id\: The maximum range at which a fiducial's key can be accurately identified. If a fiducial is closer that \verb\range_max\ but further away than \verb\range_max_id\ then it detects that there is a fiducial but can't identify it.
+\item \verb\fov\: The field of view of the fiducial finder \emph{in DEGREES}.
+\end{itemize}
+
+
+\subsubsection{ranger sensor} \label{sec:BuildingAWorld:BuildingRobot:RobotSensors:Ranger Sensor}
+This\footnote{\url{http://rtv.github.com/Stage/group__model__ranger.html}}
+simulates any kind of obstacle detection device (e.g. sonars, lasers, or
+infrared sensors). These can locate models whose {\tt ranger\_return} is
+non-negative. Using a ranger model you can define any number of ranger
+sensors and apply them all to a single device. The parameters for the
+{\tt sensor} model and their inputs are described in the Stage manual, but
+basically:
+\begin{itemize} 
+\item \verb|size [x y]|: how big the sensors are.
+\item \verb|range [min max]|: defines the minimum and maxium distances that
+can be sensed.
+\item \verb|fov deg|: defines the field of view of the sensors in DEGREES
+\item \verb|samples|: this is only defined for a laser - it specifies
+      ranger readings the sensor takes. The laser model behaves like a
+      large number of rangers sensors all with the same x and y coordinates
+      relative to the robot's centre, each of these rangers has a slightly
+      different yaw. The rangers are spaced so that there are samples
+      number of rangers distributed evenly to give the laser's field of
+      view. So if the field of view is 180 and there are 180 samples the
+      rangers are 1 apart.
+\end{itemize}
+
+\subsubsection{ranger device}
+A ranger device\footnote{\url{http://rtv.github.com/Stage/group__model__ranger.html}} is comprised of ranger sensors.  A laser is a special case
+of ranger sensor which allows only one sensor, and has a very large field
+of view.  For a ranger device, you just provide a list of sensors which
+comprise this device, typically resetting the pose for each.  How to write
+the \verb|[x y yaw]| data is explained in Section
+\ref{sec:BuildingAWorld:BuildingRobot:RobotSensors}.
+\begin{verbatim}
+  sensor_name (pose [x1 y1 z1 yaw1])
+  sensor_name (pose [x2 y2 z2 yaw2])
+\end{verbatim}
+
+\subsubsection{gripper} \label{sec:BuildingAWorld:BuildingRobot:RobotSensors:Gripper}
+The gripper model \footnote{\url{http://rtv.github.com/Stage/group__model__gripper.html}}
+is a simulation of the gripper you get on a Pioneer robot.\footnote{The Pioneer grippers looks like a big block on the front of the robot with two big sliders that close around an object.} If you put a gripper on your robot model it means that your robot is able to pick up objects and move them around within the simulation. The online Stage manual says that grippers are deprecated in Stage 3.X.X, however this is not actually the case and grippers are very useful if you want your robot to be able to manipulate and move items. The parameters you can use to customise the gripper model are:
+\begin{itemize}
+	\item \verb\size [x y z]\: The x and y dimensions of the gripper.
+	\item \verb\pose [x y z yaw]\: Where the gripper is placed on the robot, relative to the robot's geometric centre. The pose parameter is decribed properly in Section \ref{sec:BuildingAWorld:BuildingRobot:RobotSensors}.
+\end{itemize}
+
+\subsubsection{position}\footnote{\url{http://rtv.github.com/Stage/group__model__position.html}}\label{sec:BuildingAWorld:BuildingRobot:RobotSensors:Position}
+The position model simulates the robot's odometry, this is when the robot keeps track of where it is by recording how many times its wheels spin and the angle it turns. This robot model is the most important of all because it allows the robot model to be embodied in the world, meaning it can collide with anything which has its \verb|obstacle_return| parameter set to true. The position model uses the \verb|position2d| interface, which is essential for \pl because it tells \pl where the robot actually is in the world.
+The most useful parameters of the position model are:
+\begin{itemize}
+\item \verb|drive|: Tells the odometry how the robot is driven. This is usually ``diff'' which means the robot is controlled by changing the speeds of the left and right wheels independently. Other possible values are ``car'' which means the robot uses a velocity and a steering angle, or ``omni'' which means it can control how it moves along the $x$ and $y$ axes of the simulation.
+\item \verb|localization|: tells the model how it should record the odometry ``odom'' if the robot calculates it as it moves along or ``gps'' for the robot to have perfect knowledge about where it is in the simulation. 
+\item \verb|odom_error [x y angle]|: The amount of error that the robot will make in the odometry recordings.
+% \item \verb|mass <int>|: How heavy the robot is.
+\end{itemize}
+
+
+\subsection{An Example Robot} \label{sec:BuildingAWorld:BuildingRobot:ExampleRobot}
+
+To demonstrate how to build a model of a robot in \plst we will build our own example. First we will describe the physical properties of the robot, such as size and shape. Then we will add sensors onto it so that it can interact with its environment.
+
+\subsubsection{The Robot's Body}\label{sec:BuildingAWorld:BuildingRobot:ExampleRobot:Body}
+Let's say we want to model a rubbish collecting robot called ``Bigbob''. The first thing we need to do is describe its basic shape, to do this you need to know your robot's dimensions in metres. Figure \ref{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:BasicBigbob} shows the basic shape of Bigbob drawn onto some cartesian coordinates, the coordinates of the corners of the robot have been recorded. We can then build this model using the \verb|block| model parameter\footnote{In this example we're using blocks with the position model type but we could equally use it with other model types.}:
+\begin{figure}
+	\centering
+	\includegraphics[width=0.7\linewidth]{./pics/robot_building/bigbob1.png} 
+	\caption{The basic shape we want to make Bigbob, the units on the axes are in metres.}
+	\label{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:BasicBigbob}
+\end{figure}
+
+\begin{verbatim}
+define bigbob position
+
+      block
+      (
+            points 6
+            point[0] [0.75 0]
+            point[1] [1 0.25]
+            point[2] [1 0.75]
+            point[3] [0.75 1]
+            point[4] [0 1]
+            point[5] [0 0]
+            z [0 1]
+      )
+)
+\end{verbatim}
+
+\tiobox{
+{ \tt cd \$HOME/tutorial-4/code/Ch3} \\
+{ \tt > stage bigbob1.world}
+}
+
+
+In the first line of this code we state that we are defining a \verb|position| model called \verb|bigbob|. Next \verb|block| declares that this \verb\position\ model contains a block.
+The following lines go on to describe the shape of the block;  \verb|points 6| says that the block has 6 corners and \verb|point[number] [x y]| gives the coordinates of each corner of the polygon in turn. Finally, the \verb\z [height_from height_to]\ states how tall the robot should be, the first parameter being a lower coordinate in the $z$ plane, and the second parameter being the upper coordinate in the $z$ plane. In this example we are saying that the block describing Bigbob's body is on the ground (i.e. its lower $z$ coordinate is at 0) and it is 1 metre tall. If I wanted it to be from 50cm off the ground to 1m then I could use \verb\z [0.5 1]\.\newline
+Now in the same way as we built the body we can add on some teeth for Bigbob to collect rubbish between. Figure \ref{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:BigbobTeeth} shows Bigbob with teeth plotted onto a cartesian grid:
+\begin{figure}
+	\centering
+	\includegraphics[width=0.6\linewidth]{./pics/robot_building/bigbob2.png} 
+	\caption{The new shape of Bigbob.}
+	\label{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:BigbobTeeth}
+\end{figure}
+
+\begin{verbatim}
+define bigbob position
+(
+      size [1.25 1 1]
+
+      # the shape of Bigbob
+ 
+      block
+      (
+            points 6
+            point[5] [0 0]
+            point[4] [0 1]
+            point[3] [0.75 1]
+            point[2] [1 0.75]
+            point[1] [1 0.25]
+            point[0] [0.75 0]
+            z [0 1]
+      )
+
+      block
+      (
+            points 4
+            point[3] [1 0.75]
+            point[2] [1.25 0.75]
+            point[1] [1.25 0.625]
+            point[0] [1 0.625]
+            z [0 0.5]
+      )
+
+      block
+      (
+            points 4
+            point[3] [1 0.375]
+            point[2] [1.25 0.375]
+            point[1] [1.25 0.25]
+            point[0] [1 0.25]
+            z [0 0.5]
+      )
+)
+\end{verbatim}
+
+\tiobox{\tt > stage bigbob2.world }
+
+To declare the size of the robot you use the \verb|size [x y z]| parameter, this will cause the polygon described to be scaled to fit into a box which is \verb|x| by \verb\y\ in size and \verb\z\ metres tall. The default size is 0.4 x 0.4 x 1 m, so because the addition of rubbish-collecting teeth made Bigbob longer, the size parameter was needed to stop \plst from making the robot smaller than it should be. In this way we could have specified the polygon coordinates to be 4 times the distance apart and then declared its size to be \verb|1.25 x 1 x 1| metres, and we would have got a robot the size we wanted. For a robot as large as Bigbob this is not really important, but it could be useful when building models of very small robots. 
+It should be noted that it doesn't actually matter where in the cartesian coordinate system you place the polygon, instead of starting at \verb|(0, 0)| it could just as easily have started at \verb|(-1000, 12345)|. With the \verb\block\ parameter we just describe the \emph{shape} of the robot, not its size or location in the map. \newline
+You may have noticed that in Figures \ref{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:BasicBigbob} and \ref{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:BigbobTeeth} Bigbob is facing to the right of the grid. When you place any item in a \plst simulation they are, by default, facing to the right hand side of the simulation. Figure \ref{fig:BuildingAWorld:EmptyWorld:Models:GUIGrid} shows that the grids use a typical Cartesian coordinate system, and so if you want to alter the direction an object in the simulation is pointing (its ``yaw'') any angles you give use the x-axis as a reference, just like vectors in a Cartesian coordinate system (see Figure \ref{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:EmptyCartGrid}) and so the default yaw is $0^{\circ}$. This is also why in Section \ref{sec:BuildingAWorld:EmptyWorld} the \verb|gui_nose| shows the map is facing to the right. Figure \ref{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:Yaws} shows a few examples of robots with different yaws.
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.5\linewidth]{./pics/robot_building/cartesian_grid_wpolars.png} 
+	\caption{A cartesian grid showing how angles are described.}
+	\label{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:EmptyCartGrid}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.6\linewidth]{./pics/robot_building/yaw_examples.png} 
+	\caption{Starting from the top right robot and working anti-clockwise, the yaws of these robots are 0, 90, -45 and 200.}
+	\label{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:Yaws}
+\end{figure}
+
+By default, \plst assumes the robot's centre of rotation is at its
+geometric centre based on what values are given to the robot's \verb|size|
+parameter. Bigbob's \verb|size| is \verb|1.25 x 1 x 1| so \plst will place
+its centre at \verb|(0.625, 0.5, 0.5)|, which means that Bigbob's wheels
+would be closer to its teeth. Instead let's say that Bigbob's centre of
+rotation is in the middle of its main body (shown in Figure
+\ref{fig:BuildingAWorld:BuildingRobot:ExampleRobot:Body:BasicBigbob}) which
+puts the centre of rotation at \verb|(0.5, 0.5, 0.5)|. To change this in
+robot model you use the \verb|origin| \\ \verb|[x-offset y-offset z-offset]| command:
+\begin{verbatim}
+define bigbob position
+(
+      # actual size
+      size [1.25 1 1]
+      # centre of rotation offset
+      origin [0.125 0 0]
+
+      # the shape of Bigbob
+      block
+            ...
+            ...
+            ...
+)
+\end{verbatim}
+
+
+\tiobox{
+{\tt 
+> stage bigbob3.world} \\
+Click on the robot, and it should hilight.  Click and hold down the right
+(secondary) mouse button, and move the mouse to rotate bigbob.}
+
+Finally we will specify the \verb|drive| of Bigbob, this is a parameter of the \verb|position| model and has been described earlier.
+\begin{verbatim}
+define bigbob position
+(
+      # actual size
+      size [1.25 1 1]
+      # centre of rotation offset
+      origin [0.125 0 0]
+
+      # the shape of Bigbob
+      block
+            ...
+            ...
+            ...
+      
+      # positonal things
+      drive "diff"
+)
+\end{verbatim}
+
+
+\subsubsection{The Robot's Sensors}\label{sec:BuildingAWorld:BuildingRobot:ExampleRobot:RobotSensors}
+Now that Bigbob's body has been built let's move on to the sensors. We will put sonar and blobfinding sensors onto Bigbob so that it can detect walls and see coloured blobs it can interpret as rubbish to collect. We will also put a laser between Bigbob's teeth so that it can detect when an item passes in between them.
+
+We will start with the sonars. The first thing to do is to define a model
+for the sonar sensor that is going to be used on Bigbob:
+\begin{verbatim}
+define bigbobs_sonars sensor
+(
+      # parameters...
+)
+define bigbobs_ranger ranger
+(
+      # parameters...
+)
+\end{verbatim}
+Here we tell \plst that we will \verb|define| a type of sonar sensor called \verb|bigbobs_sonars|.Next, we'll tell Player/Stage to use these sensors in a ranging device. Let's put four sonars on Bigbob, one on the front of each tooth, and one on the front left and the front right corners of its body. 
+
+When building Bigbob's body we were able to use any location on a coordinate grid that we wanted and could declare our shape polygons to be any distance apart we wanted so long as we resized the model with \verb|size|. In contrast, sensors - all sensors not just rangers - must be positioned according to the \emph{robot's} origin and actual size. To work out the distances in metres it helps to do a drawing of where the sensors will go on the robot and their distances from the robot's origin. When we worked out the shape of Bigbob's body we used its actual size, so we can use the same drawings again to work out the distances of the sensors from the origin as shown in Figure \ref{fig:BuildingAWorld:BuildingRobot:RobotSensors:Sonars}.
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.6\linewidth]{./pics/robot_building/bigbob_sonars.png} 
+	\caption{The position of Bigbob's sonars (in red) relative to its origin. The origin is marked with a cross, some of the distances from the origin to the sensors have been marked. The remaining distances can be done by inspection.}
+	\label{fig:BuildingAWorld:BuildingRobot:RobotSensors:Sonars}
+\end{figure}
+
+First, we'll define a single raners (in this case sonar) sensor.
+To define the size, range and field of view of the sonars we just consult the
+sonar device's datasheet.  
+\begin{verbatim}
+define bigbobs_sonar sensor
+(
+    # define the size of each transducer [xsize ysize zsize] in meters
+    size [0.01 0.05 0.01 ] 
+    # define the range bounds [min max]
+    range [0.3 2.0]
+    # define the angular field of view in degrees
+    fov 10
+    # define the color that ranges are drawn in the gui
+    color_rgba [ 0 1 0 1 ] 
+)
+\end{verbatim}
+
+Then, define how the sensors are placed into the ranger device.
+The process of working out where the sensors go relative to the origin of the
+robot is the most complicated part of describing the sensor.
+\begin{verbatim}
+define bigbobs_sonars ranger
+( 
+  # one line for each sonar [xpos ypos zpos heading]
+  bigbobs_sonar( pose [ 0.75 0.1875 0 0]) # fr left tooth
+  bigbobs_sonar( pose [ 0.75 -0.1875 0 0]) # fr right tooth
+  bigbobs_sonar( pose [ 0.25 0.5 0 30]) # left corner
+  bigbobs_sonar( pose [ 0.25 -0.5 0 -30]) # right corner
+)
+\end{verbatim}
+
+
+\tiobox{
+{\tt > player bigbob4.cfg}  (in one terminal window)\\
+{\tt > playerv --ranger:0}  (in another terminal window)\\
+\\
+{\bf Note:} \\
+From now on, in the examples, player should be started in a different window
+from the other commands given.  For brevity, I won't repeat this in every TRY
+IT OUT box.}
+
+
+Now that Bigbob's sonars are done we will attach a blobfinder:
+\begin{verbatim}
+define bigbobs_eyes blobfinder
+(
+      # parameters
+)
+\end{verbatim}
+
+Bigbob is a rubbish-collector so here we should tell it what colour of rubbish to look for. Let's say that the intended application of Bigbob is in an orange juice factory and he picks up any stray oranges or juice cartons that fall on the floor. Oranges are orange, and juice cartons are (let's say) dark blue so Bigbob's blobfinder will look for these two colours:
+\begin{verbatim}
+define bigbobs_eyes blobfinder
+(
+      # number of colours to look for
+      colors_count 2
+      
+      # which colours to look for
+      colors ["orange" "DarkBlue"]
+)
+\end{verbatim}
+Then we define the properties of the camera, again these come from a datasheet:
+\begin{verbatim}
+define bigbobs_eyes blobfinder
+(
+      # number of colours to look for
+      colors_count 2
+      
+      # which colours to look for
+      colors ["orange" "DarkBlue"]
+
+      # camera parameters
+      image [160 120]   #resolution
+      range 5.00        # m
+      fov 60            # degrees 
+)
+\end{verbatim}
+
+\tiobox{
+{\tt > player bigbob5.cfg} \\
+{\tt > playerv --blobfinder:0} \\
+}
+
+
+The last sensor that needs adding to Bigbob is the laser, which will be
+used to detect whenever a piece of rubbish has been collected, the laser's
+location on the robot is shown in Figure
+\ref{fig:BuildingAWorld:BuildingRobot:RobotSensors:Laser}. Following the
+same principles as for our previous sensor models we can create a
+description of this laser:
+\begin{verbatim}
+define bigbobs_laser sensor
+(
+      size [0.025 0.025 0.025]
+      range [0 0.25]            # max = dist between teeth in m
+      fov 20                    # does not need to be big
+      color_rgba [ 1 0 0 0.5] 
+      samples 180               # number of ranges measured
+)
+define bigbobs_lasers ranger
+( 
+      bigbobs_laser( pose [ 0.625 0.125 -0.975 270 ])
+)
+\end{verbatim}
+
+With this laser we've set its maximum range to be the distance between
+teeth, and the field of view is arbitrarily set to $20^{\circ}$. We have
+calculated the laser's \verb|pose| in exactly the same way as the sonars
+\verb|pose|, by measuring the distance from the laser's centre to the
+robot's origin (which we set with the \verb\origin\ parameter earlier). The
+$z$ coordinate of the pose parameter when describing parts of the robot is
+relative to the very top of the robot. In this case the robot is 1 metre
+tall so we put the laser at $-0.975$ so that it is on the ground. The
+laser's yaw is set to $270^{\circ}$ so that it points across Bigbob's
+teeth. We also set the size of the laser to be 2.5cm cube so that it
+doesn't obstruct the gap between Bigbob's teeth.
+
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.6\linewidth]{./pics/robot_building/bigbob_laser.png} 
+	\caption{The position of Bigbob's laser (in red) and its distance, in metres, relative to its origin (marked with a cross).}
+	\label{fig:BuildingAWorld:BuildingRobot:RobotSensors:Laser}
+\end{figure}
+
+
+Now that we have a robot body and sensor models all we need to do is put them together and place them in the world. To add the sensors to the body we need to go back to the \verb|bigbob position| model:
+\begin{verbatim}
+define bigbob position
+(
+      # actual size
+      size [1.25 1 1]
+      # centre of rotation offset
+      origin [0.125 0 0]
+
+      # the shape of Bigbob
+      block
+            ...
+            ...
+            ...
+      
+      # positonal things
+      drive "diff"
+      
+      # sensors attached to bigbob
+      bigbobs_sonars()
+      bigbobs_eyes()
+      bigbobs_laser()
+)
+\end{verbatim}
+The extra line \verb|bigbobs_sonars()| adds the sonar model called
+\verb|bigbobs_sonars()| onto the \verb|bigbob| model, likewise for
+\verb|bigbobs_eyes()| and \verb|bigbobs_laser()|. After this final step we
+now have a complete model of our robot bigbob, the full code for which can
+be found in appendix \label{app:Abigbob.inc}.
+At this point it's worthwhile to copy this into a .inc file, so that the
+model could be used again in other simulations or worlds.  This file can
+also be found in the example code in {\tt code/Ch5.3/bigbob.inc}.
+
+To put our Bigbob model into our empty world (see Section \ref{sec:BuildingAWorld:EmptyWorld:BasicWorldfile}) we need to add the robot to our worldfile empty.world:
+\begin{verbatim}
+include "map.inc"
+include "bigbob.inc"
+
+# size of the whole simulation
+size [15 15]
+
+
+# configure the GUI window
+window
+( 
+      size [ 700.000 700.000 ] 
+      scale 35
+)
+
+
+# load an environment bitmap
+floorplan
+(
+      bitmap "bitmaps/cave.png"
+      size [15 15 0.5]
+)
+
+bigbob
+(
+      name "bob1"
+      pose [-5 -6 0 45]
+      color "green"
+)
+\end{verbatim}
+Here we've put all the stuff that describes Bigbob into a .inc file \verb|bigbob.inc|, and when we include this, all the code from the .inc file is inserted into the .world file. The section here is where we put a version of the bigbob model into our world:
+\begin{verbatim}
+bigbob
+(
+      name "bob1"
+      pose [-5 -6 0 45]
+      color "green"
+)
+\end{verbatim}
+Bigbob is a model description, by not including any \verb|define| stuff in the top line there it means that we are making an instantiation of that model, with the name \verb|bob1|. Using an object-oriented programming analogy, \verb|bigbob| is our class, and \verb|bob1| is our object of class \verb|bigbob|. The \verb|pose [x y yaw]| parameter works in the same was as \verb|spose [x y yaw]| does. The only differences are that the coordinates use the centre of the simulation as a reference point and \verb|pose| lets us specify the initial position and heading of the entire \verb\bob1\ model, not just one sensor within that model.
+Finally we specify what colour \verb|bob1| should be, by default this is red. The \verb|pose| and \verb|color| parameters could have been specified in our bigbob model but by leaving them out it allows us to vary the colour and position of the robots for each different robot of type \verb|bigbob|, so we could declare multiple robots which are the same size, shape and have the same sensors, but are rendered by \plst in different colours and are initialised at different points in the map.\newline
+When we run the new bigbob6.world with \plst we see our Bigbob robot is
+occupying the world, as shown in Figure
+\ref{fig:BuildingAWorld:BuildingRobot:RobotSensors:FinalRobot}. 
+\begin{figure}
+	\centering
+	%\includegraphics[width=0.7\linewidth]{./pics/robot_building/final_robot_build.png} 
+	\includegraphics[width=0.7\linewidth]{./pics/robot_building/final_robot_build_wsensors.png} 
+        \caption{Our bob1 robot placed in the simple world, showing the
+        range and field of view of the ranger sensors.}
+	\label{fig:BuildingAWorld:BuildingRobot:RobotSensors:FinalRobot}
+\end{figure}
+
+\tiobox{
+{\tt > player bigbob6.cfg} \\
+{\tt > playerv --ranger:0 --ranger:1} \\
+}
+
+
+\section{Building Other Stuff} \label{sec:BuildingAWorld:OtherStuff}
+We established in Section \ref{sec:BuildingAWorld:BuildingRobot:RobotSensors} that Bigbob works in a orange juice factory collecting oranges and juice cartons. Now we need to build models to represent the oranges and juice cartons so that Bigbob can interact with things.
+
+We'll start by building a model of an orange:
+\begin{verbatim}
+define orange model
+(
+      # parameters...
+)
+\end{verbatim}
+
+The first thing to define is the shape of the orange. The \verb|block|
+parameter is one way of doing this, which we can use to build a blocky
+approximation of a circle. An alternative to this is to use \verb|bitmap|
+which we previously saw being used to create a map. What the bitmap command
+actually does is take in a picture, and turn it into a series of blocks
+which are connected together to make a model the same shape as the picture,
+as illustrated in Figure \ref{fig:BuildingAWorld:OtherStuff:Ghosts} for an
+alien bitmap.
+In our code, we don't want an alien, we want a simple circular shape (see
+Figure \ref{fig:circle.png}), so we'll point to a
+circular bitmap.
+
+\begin{figure}
+	\centering
+	\begin{minipage}[c]{0.3\linewidth}
+		\centering
+		\includegraphics{./pics/oranges_box/ghost_original.png} %[width=\linewidth]
+		
+	\end{minipage}%
+	\hspace{0.05\linewidth}
+	\begin{minipage}[c]{0.6\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{./pics/oranges_box/ghost_woutline.png} 
+	\end{minipage}	
+	\caption{The left image is the original picture, the right image is its \plst interpretation.}
+		\label{fig:BuildingAWorld:OtherStuff:Ghosts}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\begin{minipage}[c]{0.2\linewidth}
+		\centering
+		\includegraphics{./pics/oranges_box/circle.png} 
+		\caption{./bitmaps/circle.png}
+		\label{fig:circle.png}	
+	\end{minipage}%
+	\hspace{0.1\linewidth}
+	\begin{minipage}[c]{0.6\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{./pics/oranges_box/orange_and_bob.png} 
+		\caption{The orange model rendered in the same \plst window as Bigbob.}
+		\label{fig:BuildingAWorld:OtherStuff:OrangeAndBob}
+	\end{minipage}	
+\end{figure}
+
+
+\begin{verbatim}
+define orange model
+(
+      bitmap "bitmaps/circle.png"
+      size [0.15 0.15 0.15]
+      color "orange"
+)
+\end{verbatim}
+
+In this bit of code we describe a model called \verb|orange| which uses a bitmap to define its shape and represents an object which is $15cm$ x $15cm$ x $15cm$ and is coloured orange. Figure \ref{fig:BuildingAWorld:OtherStuff:OrangeAndBob} shows our orange model next to Bigbob.
+
+Building a juice carton model is similarly quite easy:
+
+\begin{verbatim}
+define carton model
+(
+      # a carton is retangular
+      # so make a square shape and use size[]
+      block
+      (
+            points 4
+            point[0] [1 0]
+            point[1] [1 1]
+            point[2] [0 1]
+            point[3] [0 0]
+            z [0 1]
+      )
+
+      # average litre carton size is ~ 20cm x 10cm x 5cm ish
+      size [0.1 0.2 0.2]
+
+      color "DarkBlue"
+)
+\end{verbatim}
+
+We can use the \verb|block| command since juice cartons are boxy, with boxy things it's slightly easier to describe the shape with \verb|block| than drawing a bitmap and using that. In the above code I used \verb\block\ to describe a metre cube (since that's something that can be done pretty easily without needing to draw a carton on a grid) and then resized it to the size I wanted using \verb\size\.
+
+Now that we have described basic \verb|orange| and \verb|carton| models it's time to put some oranges and cartons into the simulation. This is done in the same way as our example robot was put into the world:
+\begin{verbatim}
+orange
+(
+      name "orange1" 
+      pose [-2 -5 0 0]
+)
+
+carton
+(
+      name "carton1" 
+      pose [-3 -5 0 0]
+)
+\end{verbatim}
+We created models of oranges and cartons, and now we are declaring that there will be an instance of these models (called \verb|orange1| and \verb|carton1| respectively) at the given positions. Unlike with the robot, we declared the \verb|color| of the models in the description so we don't need to do that here. If we did have different colours for each orange or carton then it would mess up the blobfinding on Bigbob because the robot is only searching for orange and dark blue.
+At this point it would be useful if we could have more than just one orange or carton in the world (Bigbob would not be very busy if there wasn't much to pick up), it turns out that this is also pretty easy:
+\begin{verbatim}
+orange(name "orange1" pose [-1 -5 0 0])
+orange(name "orange2" pose [-2 -5 0 0])
+orange(name "orange3" pose [-3 -5 0 0])
+orange(name "orange4" pose [-4 -5 0 0])
+
+carton(name "carton1" pose [-2 -4 0 0])
+carton(name "carton2" pose [-2 -3 0 0])
+carton(name "carton3" pose [-2 -2 0 0])
+carton(name "carton4" pose [-2 -1 0 0])
+\end{verbatim}
+
+Up until now we have been describing models with each parameter on a new line, this is just a way of making it more readable for the programmer -- especially if there are a lot of parameters. If there are only a few parameters or you want to be able to comment it out easily, it can all be put onto one line. Here we declare that there will be four \verb|orange| models in the simulation with the names \verb|orange1| to \verb|orange4|, we also need to specify different poses for the models so they aren't all on top of each other. Properties that the orange models have in common (such as shape, colour or size) should all be in the model definition. 
+
+\tiobox{
+{\tt > player bigbob7.cfg} \\
+{\tt > playerv --ranger:0 --ranger:1 --blobfinder:0} \\
+}
+
+The full worldfile is included in appendix B, this includes the orange and carton models as well as the code for putting them in the simulation. Figure \ref{fig:BuildingAWorld:OtherStuff:FinalRobotAndStuff} shows the populated \plst simulation.
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.8\linewidth]{./pics/oranges_box/final_robot_and_stuff.png} 
+	\caption{The Bigbob robot placed in the simulation along with junk for it to pick up.}
+	\label{fig:BuildingAWorld:OtherStuff:FinalRobotAndStuff}
+\end{figure}
+
+
+
+\chapter{Writing a Configuration (.cfg) File} \label{sec:ConfigurationFile}
+
+As mentioned earlier, \pl is a hardware abstraction layer which connects your code to the robot's hardware. It does this by acting as a Server/Client type program where your code and the robot's sensors are clients to a \pl server which then passes the data and instructions around to where it all needs to go. This stuff will be properly explained in Section \ref{sec:Coding}, it all sounds more complicated than it is because \plst takes care of all the difficult stuff. The configuration file is needed in order to tell the \pl server which drivers to use and which interfaces the drivers will be using.
+
+For each model in the simulation or device on the robot that you want to interact with, you will need to specify a driver. This is far easier than writing worldfile information, and follows the same general syntax. The driver specification is in the form:
+\begin{verbatim}
+driver
+(
+      name "driver_name"
+      provides [device_address]
+      # other parameters... 
+)
+\end{verbatim}
+The \verb|name| and \verb|provides| parameters are mandatory information, without them \pl won't know which driver to use (given by \verb|name|) and what kind of information is coming from the driver (\verb|provides|). The \verb|name| parameter is not arbitrary, it must be the name of one of \pl's inbuilt drivers\footnote{It is also possible to build your own drivers for a hardware device but this document won't go into how to do this because it's not relevant to \plst.} that have been written for \pl to interact with a robot device. A list of supported driver names is in the \pl Manual\footnote{\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/group__drivers.html}}, although when using Stage the only one that is needed is \verb|"stage"|. 
+
+The \verb|provides| parameter is a little more complicated than \verb|name|. It is here that you tell \pl what interface to use in order to interpret information given out by the driver (often this is sensor information from a robot), any information that a driver \verb\provides\ can be used by your code. For a Stage simulated robot the \verb|"stage"| driver can provide the interfaces to the sensors discussed in Section \ref{sec:BuildingAWorld:BuildingRobot:RobotSensors}. 
+Each interface shares the same name as the sensor model, so for example a \verb|ranger| model would use the \verb|ranger| interface to interact with \pl and so on (the only exception to this being the \verb|position| model which uses the \verb|position2d| interface). 
+The \pl manual contains a list of all the different interfaces that can be used\footnote{\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/group__interfaces.html}}, the most useful ones have already been mentioned in Section \ref{sec:BuildingAWorld:BuildingRobot:RobotSensors}, although there are others too numerable to list here.
+
+The input to the \verb|provides| parameter is a ``device address'', which specifies which TCP port an interface to a robot device can be found, Section \ref{sec:ConfigurationFile:DeviceAddress} has more information about device addresses. This uses the key:host:robot:interface:index form separated by white space.
+
+\begin{verbatim}
+provides ["key:host:robot:interface:index" 
+          "key:host:robot:interface:index"
+          "key:host:robot:interface:index"
+          ...]
+\end{verbatim}
+
+After the two mandatory parameters, the next most useful driver parameter is \verb|model|. This is only used if \verb|"stage"| is the driver, it tells \pl which particular model in the worldfile is providing the interfaces for this particular driver. A different driver is needed for each model that you want to use. 
+Models that aren't required to do anything (such as a map, or in the example of Section \ref{sec:BuildingAWorld:OtherStuff} oranges and boxes) don't need to have a driver written for them.\newline
+The remaining driver parameters are \verb|requires| and \verb|plugin|. The \verb|requires| is used for drivers that need input information such as \verb|"vfh"|, it tells this driver where to find this information and which interface it uses. 
+The \verb|requires| parameter uses the same key:host:robot:interface:index syntax as the \verb|provides| parameter. Finally the \verb|plugin| parameter is used to tell \pl where to find all the information about the driver being used. 
+Earlier we made a .cfg file in order to create a simulation of an empty (or at least unmoving) world, the .cfg file read as follows:
+\begin{verbatim}
+driver
+(		
+      name "stage"
+      plugin "stageplugin"
+
+      provides ["simulation:0" ]
+
+      # load the named file into the simulator
+      worldfile "empty.world"	
+)
+\end{verbatim}
+This has to be done at the beginning of the configuration file because it tells \pl that there is a driver called \verb|"stage"| that we're going to use and the code for dealing with this driver can be found in the \verb|stageplugin| plugin. This needs to be specified for Stage because Stage is an add-on for \pl, for drivers that are built into \pl by default the \verb|plugin| doesn't need to be specified.
+
+\section{Device Addresses - key:host:robot:interface:index} \label{sec:ConfigurationFile:DeviceAddress}
+
+A device address is used to tell \pl where the driver you are making will present (or receive) information and which interface to use in order to read this information. This is a string in the form \verb|key:host:robot:interface:index| where each field is separated by a colon.
+\begin{itemize}
+\item \verb\key\: The \pl manual states that: \textit{``The purpose of the key field is to allow a driver that supports multiple interfaces of the same type to map those interfaces onto different devices''}\footnote{\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/group__tutorial__config.html\#device_addresses}}. 
+This is a driver level thing and has a lot to do with the \verb\name\ of the driver that you are using, generally for \verb\"stage"\ the \verb\key\ doesn't need to be used. If you're using \pl without Stage then there is a useful section about device address keys in the \pl manual\footnote{\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/group__tutorial__config.html\#device_key}}.
+\item \verb\host\: This is the address of the host computer where the device is located. With a robot it could be the IP address of the robot. The default host is ``localhost'' which means the computer on which \pl is running.
+\item \verb\robot\: this is the TCP port through which \pl should expect to receive data from the interface usually a single robot and all its necessary interfaces are assigned to one port. The default port used is 6665, if there were two robots in the simulation the ports could be 6665 and 6666 although there's no rule saying which number ports you can or can't use.
+\item \verb\interface\: The interface to use in order to interact with the data. There is no default value for this option because it is a mandatory field.
+\item \verb\index\: If a robot has multiple devices of the same type, for instance it has 2 cameras to give the robot depth perception, each device uses the same interface but gives slightly different information. The index field allows you to give a slightly different address to each device. So two cameras could be \verb|camera:0| and \verb|camera:1|. 
+This is very different from the \verb\key\ field because having a ``driver that supports multiple interfaces of the same type'' is NOT the same as having multiple devices that use the same interface. Again there is no default index, as this is a mandatory field in the device address, but you should use 0 as the index if there is only one of that kind of device. 
+\end{itemize}
+
+If you want to use any of the default values it can just be left out of the device address. So we could use the default host and robot port and specify (for example) a laser interface just by doing \verb\"ranger:0"\. 
+However, if you want to specify fields at the beginning of the device address but not in the middle then  the separating colons should remain. For example if we had a host at \verb|"127.0.0.1"| with a \verb\ranger\ interface then we would specify the address as \verb|"127.0.0.1::ranger:0"|, the robot field is empty but the colons around it are still there. You may notice that the key field here was left off as before.
+
+\section{Putting the Configuration File Together}\label{sec:ConfigurationFile:FinishingCFG}
+
+We have examined the commands necessary to build a driver for a model in the worldfile, now it is just a case of putting them all together. To demonstrate this process we will build a configuration file for the worldfile developed in Section \ref{sec:BuildingAWorld}. In this world we want our code to be able to interact with the robot, so in our configuration file we need to specify a driver for this robot.
+\begin{verbatim}
+driver
+(
+      # parameters... 
+)
+\end{verbatim}
+
+The inbuilt driver that \plst uses for simulations is called \verb|"stage"| so the driver name is \verb|"stage"|.
+\begin{verbatim}
+driver
+(
+      name "stage"
+)
+\end{verbatim}
+
+The Bigbob robot uses \verb|position|, \verb|blobfinder| and \verb|ranger|
+sensors. These correspond to the \verb|position2d|, \verb|blobfinder| and
+\verb|ranger| interfaces respectively. 
+
+All range-finding sensors (i.e. sonar, laser, and IR sensors) are
+represented by the ranger interface.  In Stage 4.1.1 there is only legacy
+support for separate laser or IR interfaces.  All new development should
+use rangers.
+       
+       We want our code to be able to read from these sensors, so we need to declare interfaces for them and tell \pl where to find each device's data, for this we use the configuration file's \verb\provides\ parameter. This requires that we construct device addresses for each sensor; to remind ourselves, this is in the key:host:robot:interface:index format. We aren't using any fancy drivers, so we don't need to specify a key. We are running our robot in a simulation on the same computer as our \pl sever, so the host name is \verb\localhost\ which is the default, so we also don't need to specify a host. The robot is a TCP port to receive robot information over, picking which port to use is pretty arbitrary but what usually happens is that the first robot uses the default port 6665 and subsequent robots use 6666, 6667, 6668 etc. There is only one robot in our simulation so we will use port 6665 for all our sensor information from this robot. 
+We only have one sensor of each type, so our devices don't need separate indices. What would happen if we did have several sensors of the same type (like say two cameras) is that we put the first device at index 0 and subsequent devices using the same interface have index 1, then 2, then 3 and so on.
+%
+%\footnote{There are lots of ranger sensors in our model but when we created the robot's sensors in Section \ref{sec:BuildingAWorld:BuildingRobot:RobotSensors} we put them all into the same ranger model. So as far as the configuration file is concerned there is only one raging device using either the sonar or IR interface, because all the separate ranger devices are lumped together into this one model. We don't need to declare each ranger on an index of its own.}  
+%
+\footnote{ There are lots of ranger sensors in our model but when we
+created the robot's sensors in Section 
+\ref{sec:BuildingAWorld:BuildingRobot:RobotSensors} 
+we put them all into two ranger models (one for all the sonars and one for
+the one laser).  So as far as the configuration file is concerned there are
+only two ranging devices, because all the separate sonar sensors are lumped
+together into one device.  We don't need to declare each sonar device on an
+index of its own.
+}
+Finally we use interfaces appropriate to the sensors the robot has, so in
+our example these are the \verb|position2d|, \verb|blobfinder| interfaces
+and for our sonar and laser devices we will use the \verb|ranger|
+interface.
+
+Putting all this together under the \verb\provides\ parameter gives us:
+\begin{verbatim}
+driver
+(
+  name "stage"
+  provides ["position2d:0" 
+            "ranger:0" 
+            "blobfinder:0" 
+            "ranger:1" ]
+)
+\end{verbatim}
+The device addresses can be on the same line as each other or separate lines, just so long as they're separated by some form of white space.
+
+The last thing to do on our driver is the \verb|model "model_name"| parameter which needs to be specified because we are using \plst. This tells the simulation software that anything you do with this driver will affect the model \verb\"model_name"\ in the simulation. In the simulation we built we named our robot model ``bob1'', so our final driver for the robot will be:
+\begin{verbatim}
+driver
+(
+      name "stage"
+      provides ["position2d:0" 
+            "ranger:0" 
+            "blobfinder:0" 
+            "ranger:1"]
+      model "bob1" 
+)
+\end{verbatim}
+If our simulation had multiple Bigbob robots in it, the configuration file drivers would be very similar to one another. If we created a second robot in our worldfile and called it ``bob2'' then the driver would be:
+\begin{verbatim}
+driver
+( 
+      name "stage" 
+      provides ["position2d:0" 
+            "ranger:0" 
+            "blobfinder:0" 
+            "ranger:1"]
+      model "bob2" 
+)
+\end{verbatim}
+Notice that the port number and model name are the only differences because the robots have all the same sensors.
+
+A driver of this kind can be built for any model that is in the worldfile, not just the robots. For instance a map driver can be made which uses the \verb\map\ interface and will allow you to get size, origin and occupancy data about the map. The only requirement is that if you want to do something to the model with your code then you need to build a driver for it in the configuration file. Finally when we put the bit which declares the \verb\stage\ driver (this part is compulsory for any simulation configuration file) together with our drivers for the robot we end up with our final configuration file:
+\begin{verbatim}
+driver
+(		
+      name "stage"
+      plugin "stageplugin"
+
+      provides ["simulation:0" ]
+
+      # load the named file into the simulator
+      worldfile "worldfile_name.world"
+)      
+
+driver
+(
+      name "stage"
+      provides ["position2d:0" 
+            "ranger:0" 
+            "blobfinder:0" 
+            "ranger:1"]
+      model "bob1" 
+)
+\end{verbatim}
+
+\tiobox{
+{ \tt cd \$HOME/tutorial-4/code/Ch4} \\
+{\tt > player bigbob8.cfg (in one terminal window)}\\
+{\tt > playerv --position2d:0} \\(in another terminal window)\\
+{\tt > playerv -p 6666 -position2d:0} \\(in yet another terminal window)
+
+To drive the robots around, you select Devices/Position2d/Command in a
+playerv window, then drag the red bulls-eye around.
+}
+
+
+\chapter{Getting Your Simulation To Run Your Code}\label{sec:Coding}
+
+To learn how to write code for \pl or \plst it helps to understand the basic structure of how \pl works. \pl uses a Server/Client structure in order to pass data and instructions between your code and the robot's hardware. \pl is a server, and a hardware device\footnote{remember, a device is a piece of hardware that uses a driver which conforms to an interface. See Section \ref{sec:Basics:InterfaceDriverDevices}} on the robot is subscribed as a client to the server via a thing called a \emph{proxy}. The .cfg file associated with your robot (or your simulation) takes care of telling the \pl server which devices are attached to it, so when we run the command \verb\player some_cfg.cfg\ this starts up the \pl server and connects all the necessary hardware devices to the server. Figure \ref{fig:Coding:ServerClientRobot} shows a basic block diagram of the structure of \pl when implemented on a robot. In \plst the same command will start the \pl server and load up the worldfile in a simulation window, this runs on your computer and allows your code to interact with the simulation rather than hardware. Figure \ref{fig:Coding:ServerClientSim} shows a basic block diagram of the \plst structure.
+Your code must also subscribe to the \pl server so that it can access these proxies and hence control the robot. \pl has functions and classes which will do all this for you, but you still need to actually call these functions with your code and know how to use them. There are also such things as Òstage driversÓ such as those distributed in the stage source code under examples/ctrl, but in this manual weÕll only describe player drivers.
+
+\begin{figure}
+ 	\centering
+	\includegraphics[width=0.6\linewidth]{pics/coding/ServerClient_robot.png}
+	\caption{The server/client control structure of \pl when used on a robot. There may be several proxies connected to the server at any time.}
+	\label{fig:Coding:ServerClientRobot}
+\end{figure} 
+
+\begin{figure}
+ 	\centering
+	\includegraphics[width=0.6\linewidth]{pics/coding/ServerClient_sim.png}
+	\caption{The server/client control structure of \plst when used as a simulator. There may be several proxies connected to the server at any time.}
+	\label{fig:Coding:ServerClientSim}
+\end{figure} 
+
+\section{Types of drivers}
+\pl is compatable with C, C++ or Python drivers.  
+
+There are also such things as ``stage controllers'' such as those distributed
+in the stage source code (under {\tt examples/ctrl}), but in this manual
+we'll only describe player drivers.\footnote{Earlier versions of
+simple.world had a line {\tt ctrl wander} that automatically started the
+simulated robot working with a stage controller.  If you happen to
+encounter this simple.world file, just comment out that line to use the
+examples given here.}  Player drivers can control a real or a simulated
+robot.
+
+In this manual we will be using C++ since it's pretty general.
+The process of writing \pl code is mostly the same for each different
+language though. The \pl and \pl proxy functions have different names for
+each language, but work in more or less the same way, so even if you don't
+plan on using C++ or Stage this section will still contain helpful
+information.  
+
+Example drivers in various languages can be found in the Player source code
+under {\tt examples/}.  These and more are documented at
+\url{http://playerstage.sourceforge.net/wiki/PlayerClientLibraries}, and
+some matlab and python examples based on this manual are given at
+\url{http://turobotics.blogspot.com/2013/08/client-controllers-for-player-302-and.html}.
+
+Before beginning a project it is highly recommended that for any programs other than basic examples you should always wrap your \pl commands around your own functions and classes so that all your code's interactions with \pl are kept together the same file. This isn't a requirement of \pl, it's just good practice. For example, if you upgrade \pl or if for some reason your robot breaks and a certain function no longer works you only have to change part of a file instead of searching through all your code for places where \pl functions have been used.
+
+Finally, in order to compile your program you use the following commands (in Linux):\newline
+\texttt{g++ -o example0 \`{}pkg-config --cflags playerc++\`{} example0.cc \`{}pkg-config --libs playerc++\`{}}
+
+That will compile a program to a file called \verb\example0\ from the C++ code file \verb\example0.cc\. If you are coding in C instead then use the following command:\newline
+\texttt{gcc -o simple \`{}pkg-config --cflags playerc\`{} simple.c \`{}pkg-config --libs playerc\`{} }
+
+An even easier and more general way is to make a {\tt Makefile} that
+explains how to compile your code for you.  The details of Makefiles are
+beyond the scope of this manual, but an example is given in the tutorial
+files that came with this manual.  If you have this {\tt Makefile} in the
+same directory as your code, you can just type {\tt make file} and the make
+program will search for {\tt file.cc} and {\tt file.c} and ``do the right
+thing''.
+
+\tiobox{
+{ \tt cd \$HOME/tutorial-4/code/Ch5.1} \\
+{\tt > player simple.cfg}
+{\tt > make example0}
+{\tt > ./example0}
+}
+
+\tiobox{
+{\tt > player simple.cfg}
+{\tt > make simple}
+{\tt > ./simple}
+}
+
+
+\section{Connecting to the Server and Proxies With Your Code}\label{sec:Coding:ConnectingToServer}
+
+The first thing to do within your code is to include the \pl header file. Assuming \plst is installed correctly on your machine then this can be done with the line \verb\#include <libplayerc++/playerc++.h>\ (if you're using C then type \verb\#include <libplayerc/playerc.h>\ instead).
+
+Next we need to establish a \pl Client, which will interact with the \pl server for you. To do this we use the line:
+\begin{verbatim}
+PlayerClient client_name(hostname, port); 
+\end{verbatim}
+What this line does is declare a new object which is a PlayerClient called \verb\client_name\ which connects to the \pl server at the given address. The hostname and port is like that discussed in Section \ref{sec:ConfigurationFile:DeviceAddress}. If your code is running on the same computer (or robot) as the \pl server you wish to connect to then the hostname is ``localhost'' otherwise it will be the IP address of the computer or robot. The port is an optional parameter usually only needed for simulations, it will be the same as the port you gave in the .cfg file. This is only useful if your simulation has more than one robot in and you need your code to connect to both robots. So if you gave your first robot port 6665 and the second one 6666 (like in the example of Section \ref{sec:ConfigurationFile:FinishingCFG}) then you would need two PlayerClients, one connected to each robot, and you would do this with the following code:
+\begin{verbatim}
+PlayerClient robot1("localhost", 6665); 
+PlayerClient robot2("localhost", 6666); 
+\end{verbatim}
+If you are only using one robot and in your .cfg file you said that it would operate on port 6665 then the port parameter to the PlayerClient class is not needed. 
+\newline
+Once we have established a PlayerClient we should connect our code to the device proxies so that we can exchange information with them. Which proxies you can connect your code to is dependent on what you have put in your configuration file. For instance if your configuration file says your robot is connected to a laser but not a camera you can connect to the laser device but not the camera, even if the robot (or robot simulation) has a camera on it. 
+
+Proxies take the name of the interface which the drivers use to talk to \pl. Let's take part of the Bigbob example configuration file from Section \ref{sec:ConfigurationFile:FinishingCFG}:
+\begin{verbatim}
+driver
+(
+  name "stage"
+  provides ["position2d:0" 
+            "ranger:0" 
+            "blobfinder:0" 
+            "ranger:1" ]
+)
+\end{verbatim}
+Here we've told the \pl server that our ``robot'' has devices which use the
+position2d, ranger, and blobfinder interfaces. In our code then, we should
+connect to the position2d, ranger, and blobfinder proxies like so:
+\begin{verbatim}
+Position2dProxy positionProxy_name(&client_name,index);
+RangerProxy      sonarProxy_name(&client_name,index);
+BlobfinderProxy blobProxy_name(&client_name,index);
+RangerProxy      laserProxy_name(&client_name,index);
+\end{verbatim}
+A full list of which proxies \pl supports can be found in the \pl
+manual\footnote{\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/classPlayerCc\_1\_1ClientProxy.html}},
+they all follow the convention of being named after the interface they use.
+In the above case \verb\xProxy_name\ is the name you want to give to the
+proxy object, \verb\client_name\ is the name you gave the PlayerClient
+object earlier and \verb\index\ is the index that the device was given in
+your configuration file (probably 0).
+
+\subsection{Setting Up Connections: an Example.}\label{sec:Coding:ConnectingToServer:Example}
+
+For an example of how to connect to the \pl sever and device proxies we will use the example configuration file developed in Section \ref{sec:ConfigurationFile:FinishingCFG}. For convenience this is reproduced below:
+\begin{verbatim}
+driver
+(		
+      name "stage"
+      plugin "stageplugin"
+
+      provides ["simulation:0" ]
+
+      # load the named file into the simulator
+      worldfile "worldfile_name.world"	
+)      
+
+driver
+(
+      name "stage"
+      provides ["6665:position2d:0" 
+            "6665:ranger:0" 
+            "6665:blobfinder:0" 
+            "6665:ranger:1"]
+      model "bob1" 
+)
+\end{verbatim}
+To set up a PlayerClient and then connect to proxies on that server we can use principles discussed in this Section to develop the following code:
+\begin{verbatim}
+#include <stdio.h>
+#include <libplayerc++/playerc++.h>
+
+int main(int argc, char *argv[])
+{
+      /*need to do this line in c++ only*/
+      using namespace PlayerCc;
+	
+      PlayerClient    robot("localhost");
+
+      Position2dProxy p2dProxy(&robot,0);
+      RangerProxy      sonarProxy(&robot,0);
+      BlobfinderProxy blobProxy(&robot,0);
+      RangerProxy      laserProxy(&robot,1);
+
+      //some control code
+      return 0;
+}
+\end{verbatim}
+
+\section{Interacting with Proxies}\label{sec:Coding:InteractingWithProxies}
+
+As you may expect, each proxy is specialised towards controlling the device it connects to. This means that each proxy will have different commands depending on what it controls. 
+In Player version 3.0.2 there are 39 different proxies which you can choose to use, many of which are not applicable to \plst. This manual will not attempt to explain them all, a full list of avaliable proxies and their functions is in the \pl manual\footnote{\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/classPlayerCc\_1\_1ClientProxy.html}}, although the returns, parameters and purpose of the proxy function is not always explained. 
+\newline The following few proxies are probably the most useful to anyone using \pl or \plst.
+
+\subsection{Position2dProxy}
+The Position2dProxy is the number one most useful proxy there is. It controls the robot's motors and keeps track of the robot's odometry (where the robot thinks it is based on how far its wheels have moved).
+
+\subsubsection{Get/SetSpeed}\label{sec:Coding:InteractingWithProxies:GetSetSpeed}
+The \verb\SetSpeed\ command is used to tell the robot's motors how fast to turn. There are two different \verb\SetSpeed\ commands that can be called, one is for robots that can move in any direction and the other is for robots with differential or car-like drives. 
+\begin{itemize}
+\item \verb\SetSpeed(double XSpeed, double YSpeed, double YawSpeed)\
+\item \verb\SetSpeed(double XSpeed, double YawSpeed)\
+\item \verb\SetCarlike(double XSpeed, double DriveAngle)\
+\end{itemize}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.6\linewidth]{./pics/coding/bob_cartgrid.png}
+	\caption{A robot on a cartesian grid. This shows what directions the X and Y speeds will cause the robot to move in. A positive yaw speed will turn the robot in the direction of the + arrow, a negative yaw speed is the direction of the - arrow.}
+	\label{fig:Coding:InteractingWithProxies:GetSetSpeed:BobCartesianGrid}
+\end{figure} 
+Figure \ref{fig:Coding:InteractingWithProxies:GetSetSpeed:BobCartesianGrid} shows which direction the x, y and yaw speeds are in relation to the robot. The x speed is the rate at which the robot moves forward and the y speed is the robot's speed sideways, both are to be given in metres per second. The y speed will only be useful if the robot you want to simulate or control is a ball, since robots with wheels cannot move sideways. The yaw speed controls how fast the robot is turning and is given in radians per second, \pl has an inbuilt global function called \verb\dtor()\ which converts a number in degrees into a number in radians which could be useful when setting the yaw speed. If you want to simulate or control a robot with a differential drive system then you'll need to convert left and right wheel speeds into a forward speed and a turning speed before sending it to the proxy. For car-like drives there is the \verb\SetCarlike\ which, again is the forward speed in m/s and the drive angle in radians.
+
+The \verb\GetSpeed\ commands are essentially the reverse of the SetSpeed command. Instead of setting a speed they return the current speed relative to the robot (so x is the forward speed, yaw is the turning speed and so on).
+\begin{itemize}
+	\item \verb\GetXSpeed\: forward speed (metres/sec).
+	\item \verb\GetYSpeed\: sideways (perpendicular) speed (metres/sec).
+	\item \verb\GetYawSpeed\: turning speed (radians/sec).
+\end{itemize}
+
+\subsubsection{Get\_Pos}
+This function interacts with the robot's odometry. It allows you to monitor where the robot thinks it is. Coordinate values are given relative to its starting point, and yaws are relative to its starting yaw. 
+\begin{itemize}
+	\item \verb\GetXPos()\: gives current x coordinate relative to its x starting position.
+	\item \verb\GetYPos()\: gives current y coordinate relative to its y starting position.
+	\item \verb\GetYaw()\: gives current yaw relative to its starting yaw.
+\end{itemize}
+
+\tiobox{
+{ \tt cd \$HOME/tutorial-4/code/Ch5.2} \\
+{\tt > player bigbob7.cfg} \\
+{\tt > make bigbob8} \\
+{\tt > ./bigbob8}
+}
+
+In Section \ref{sec:BuildingAWorld:BuildingRobot:RobotSensors:Position}, we
+specified whether it would record odometry by measuring how much its wheels
+have turned, or whether the robot would have perfect knowledge of its
+current coordinates (by default the robot does not record odometry at all).
+If you set the robot to record odometry using its wheels then the positions
+returned by these get commands will become increasingly inaccurate as the
+simulation goes on. If you want to log your robots position as it moves
+around, these functions along with the perfect odometry\footnote{See
+Section \ref{sec:BuildingAWorld:BuildingRobot:RobotSensors} for how to give
+the robot perfect odometry.} setting can be used. 
+
+\subsubsection{SetMotorEnable()}
+This function takes a boolean input, telling \pl whether to enable the
+motors or not. If the motors are disabled then the robot will not move no
+matter what commands are given to it, if the motors are enabled then the
+motors will always work, this is not so desirable if the robot is on a desk
+or something and is likely to get damaged. Hence the motors being enabled
+is optional. If you are using \plst, then the motors will always be enabled
+and this command doesn't need to be run. However, if your code is ever
+likely to be moved onto a real robot and the motors are not explicitly
+enabled in your code, then you may end up spending a long time trying to
+work out why your robot is not working.
+
+\subsection{RangerProxy}\label{sec:Coding:InteractingWithProxies:ranger}
+A RangerProxy interfaces with any ranger sensor.  
+
+A laser is represented by a ranger device with one ranger sensor, whose
+{\tt samples} attribute is greater than one.  To minimize confusion with
+the depreciated laser interface, I'll refer to these as single-sensor
+devices.  A set of sonars or IR sensors is represented by a ranger device
+with multiple ranger sensors whose {\tt samples} attributes are not set (or
+set to 1).  To minimize confusion with the depreciated sonar and IR
+interfaces, I'll refer to these as multiple-sensor devices.
+
+%A laser is a special case of ranger device, it makes regularly spaced range
+%measurements turning from a minimum angle to a maximum angle. Each
+%measurement, or scan point, is treated as being done with a separate
+%ranger. 
+
+Angles are given with reference to the laser's centre front (see Figure
+\ref{fig:Coding:InteractingWithProxies:Laser:Angles}).
+
+\begin{itemize}
+	\item \verb\GetRangeCount\: The number of ranger measurements that
+              the sensor suite measures.  In the case of a single-sensor
+              device, this is given by the {\tt samples} attribute.  In the
+              case of a multiple-sensor device, this is given by the number
+              of sensors.
+	\item \verb\rangerProxy_name[ranger_number]\ 
+              The range returned by the \verb\ranger_number\$^{th}$ scan
+              point. For a single-sensor device, scan points are numbered
+              from the minimum angle at index 0, to the maximum angle at
+              index \verb\GetRangeCount()\.
+              For a multiple-sensor device, the {\tt ranger\_number} is
+              given by the order in which you included the sensor.
+        \item \verb\GetRange(ranger_number)\ Same as \verb|rangerProxy_name[ranger_number]|.
+	\item \verb\GetMinAngle()\: gives the minimum angle\footnote{One 
+        tricky thing - you need to be sure to
+        call {\tt RequestConfigure()} once before accessing the min or max
+        angles, they are initialized to zero!} covered by a ranger sensor.
+        Only makes sense for a single-sensor device.
+	\item \verb\GetMaxAngle()\: gives the maximum angle covered by a
+        ranger sensor.  Only makes sense for a single-sensor device.
+	\item \verb\GetAngularRes()\: gives the angular resolution
+        ($\Theta$ in Figure \ref{fig:Coding:InteractingWithProxies:Laser:Angles})
+\end{itemize}
+ 
+\begin{figure}
+	\centering
+	\includegraphics[width=0.8\linewidth]{./pics/coding/laserscanner2.png}
+	\caption{How laser angles are referenced. In this diagram the laser is pointing to the right along the dotted line, the angle $\theta$ is the angle of a laser scan point, in this example $\theta$ is negative.}
+	\label{fig:Coding:InteractingWithProxies:Laser:Angles}
+\end{figure} 
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\linewidth]{./pics/coding/laserscanner.png}
+	\caption{A laser scanner. The minimum angle is the angle of the rightmost laser scan, the maximum angle is the leftmost laser scan. $\theta$ is the scan resolution of the laser, it is the angle between each laser scan, given in radians.}
+	\label{fig:Coding:InteractingWithProxies:Laser:Proxy}
+\end{figure} 
+
+\tiobox{
+{\tt > player bigbob7.cfg} \\
+{\tt > make bigbob9} \\
+{\tt > ./bigbob9}
+}
+
+
+\subsection{BlobfinderProxy}\label{sec:Coding:InteractingWithProxies:Blobfinder}
+The blobfinder module analyses a camera image for areas of a desired colour and returns an array of the structure \verb\playerc_blobfinder_blob_t\, this is the structure used to store blob data. First we will cover how to get this data from the blobfinder proxy, then we will discuss the data stored in the structure.
+\begin{itemize}
+	\item \verb\GetCount\: Returns the number of blobs seen.
+	\item \verb\blobProxy_name[blob_number]\: This returns the blob structure data for the blob with the index \verb\blob_number\. Blobs are sorted by index in the order that they appear in the image from left to right. This can also be achieved with the BlobfinderProxy function \verb\GetBlob(blob_number)\.
+\end{itemize}
+
+Once we receive the blob structure from the proxy we can extract data we need. The \verb\playerc_blobfinder_blob_t\ structure contains the following fields:
+\begin{itemize}
+	\item \verb\color\: The colour of the blob it detected. This is given as a hexadecimal value.
+	\item \verb\area\: The area of the blob's bounding box.\footnote{In
+        Stage 4.1.1, there is a bug with respect to the area.  It is
+        computed as an int, but return as an unsigned int.  In order to use
+        it, you must explicitly cast it as an int {\tt (int)area}.  See
+        \url{http://sourceforge.net/p/playerstage/bugs/362/} and/or
+        \url{https://github.com/rtv/Stage/issues/41} for the details.}
+     
+	\item \verb\x\: The horizontal coordinate of the geometric centre of the blob's bounding box (see Figure \ref{fig:Coding:InteractingWithProxies:Blobfinder:BlobImage}).
+	\item \verb\y\: The vertical coordinate of the geometric centre of the blob's bounding box (see Figure \ref{fig:Coding:InteractingWithProxies:Blobfinder:BlobImage}).
+	\item \verb\left\: The horizontal coordinate of the left hand side of the blob's bounding box (see Figure \ref{fig:Coding:InteractingWithProxies:Blobfinder:BlobImage}).
+	\item \verb\right\: The horizontal coordinate of the right hand side of the blob's bounding box (see Figure \ref{fig:Coding:InteractingWithProxies:Blobfinder:BlobImage}).
+	\item \verb\top\: The vertical coordinate of the top side of the blob's bounding box (see Figure \ref{fig:Coding:InteractingWithProxies:Blobfinder:BlobImage}).
+	\item \verb\bottom\: The vertical coordinate of the bottom side of the blob's bounding box (see Figure \ref{fig:Coding:InteractingWithProxies:Blobfinder:BlobImage}).
+\end{itemize}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\linewidth]{./pics/coding/blobfinder_image.png}
+	\caption{What the fields in playerc\_blobfinder\_blob\_t mean. The blob on the left has a geometric centre at $(x,y)$, the blob on the right has a bounding box with the top left corner at $(left, top)$ pixels, and a lower right coordinate at $(right, bottom)$ pixels. Coordinates are given with reference to the top left corner of the image.}
+	\label{fig:Coding:InteractingWithProxies:Blobfinder:BlobImage}
+\end{figure} 
+
+\tiobox{
+{\tt > player bigbob7.cfg} \\
+{\tt > make bigbob10} \\
+{\tt > ./bigbob10}
+}
+
+\subsection{GripperProxy}\label{gripperproxy}
+The GripperProxy allows you to control the gripper, once the gripper is holding an item, the simulated robot will carry it around wherever it goes. Without a gripper you can only jostle an item in the simulation and you would have to manually tell the simulation what to do with an item. The GripperProxy can also tell you if an item is between the gripper teeth because the gripper model has inbuilt beams which can detect if they are broken. 
+\begin{itemize}
+	\item \verb\GetBeams\: This command will tell you if there is an item inside the gripper. If it is a value above 0 then there is an item to grab.
+	\item \verb\GetState\: This will tell you whether the gripper is opened or closed. If the command returns a 1 then the gripper is open, if it returns 2 then the gripper is closed, and 3 if the gripper is moving.
+	\item \verb\Open\: Tells the gripper to open. This will cause any items that were being carried to be dropped.
+	\item \verb\Close\: Tells the gripper to close. This will cause it to pick up anything between its teeth.
+\end{itemize}
+
+\tiobox{
+{\tt > player bigbob11.cfg} \\
+{\tt > make bigbob11} \\
+{\tt > ./bigbob11}
+}
+
+
+\subsection{SimulationProxy}
+The simulation proxy allows your code to interact with and change aspects of the simulation, such as an item's pose or its colour. 
+
+\subsubsection{Get/Set Pose}
+The item's pose is a special case of the Get/SetProperty function, because
+it is so likely that someone would want to move an item in the world they
+created a special function to do it.\newline
+\verb\SetPose2d(char *item_name, double x, double y, double yaw)\\newline
+In this case \verb\item_name\ is as with Get/SetProperty, but we can directly specify its new coordinates and yaw (coordinates and yaws are given with reference to the map's origin).\newline
+\verb\GetPose2d(char *item_name, double &x, double &y, double &yaw)\\newline
+This is like SetPose2d only this time it writes the coordinates and yaw to the given addresses in memory.
+
+\tiobox{
+{\tt > player bigbob11.cfg} \\
+{\tt > make bigbob12} \\
+{\tt > ./bigbob12}
+}
+
+\subsubsection{Get/Set Property}
+In version 4.1.1 of Stage the Get/SetProperty simulation proxy functions
+are only implemented for teh property "color".  None of the other
+properties are supported.  Previous versions of Stage (before 3.2.2) had
+some code but it wasn't fully implemented, and it's been removed since.
+
+If you desperately need this functionality you can use an earlier release
+of Stage, and the first edition of this manual describes how to get and
+set a model's property in those distributions.  
+
+In this edition of the manual I will describe the only functioning
+Get/SetProperty, which is "color".
+
+To change a property of an item in the simulation we use the following function:
+\newline\verb\SetProperty(char *item_name, char *property, void *value, size_t value_len)\
+\begin{itemize}
+	\item \verb\item_name\: this is the name that you gave to the object in the worldfile, it could be \emph{any} model that you have described in the worldfile. For example, in Section \ref{sec:BuildingAWorld:BuildingRobot:ExampleRobot} in the worldfile we declared a Bigbob type robot which we called ``bob1'' so the \verb\item_name\ for that object is ``bob1''. Similarly in Section \ref{sec:BuildingAWorld:OtherStuff} we built some models of oranges and called the ``orange1'' to ``orange4'' so the item name for one of these would be ``orange1''. Anything that is a model in your worldfile can be altered by this function, you just need to have named it, no drivers need to be declared in the configuration file for this to work either. We didn't write drivers for the oranges but we could still alter their properties this way.
+        \item \verb\property\: There is only one property about a model
+        that you can change.  You specify this wish a string:
+              \begin{itemize}
+		\item \verb\"_mp_color"\: The colour of the item. 
+              \end{itemize}
+	\item \verb\value\: The value you want to assign to the property.
+	\item \verb\value_len\: is the size of the value you gave in bytes. This can easily be found with the C or C++ \verb\sizeof()\ operator.
+\end{itemize}
+
+The \verb\value\ parameter is dependant on which \verb\property\ you want to set.
+\begin{itemize}
+		\item \verb\"color"\: This requires an array of four \verb\float\ values, scaled between 0 and 1. The first index of the array is the red component of the colour, the second is the green, third is blue and fourth is alpha (how light or dark the colour is, usually 1). For example if we want a nice shade of green, which has RGB components 171/224/110 we scale these between 0 and 1 by dividing by 255 to get 0.67/0.88/0.43 we can now put this into a float array with the line \verb\float green[]={0.67, 0.88, 0.43, 1};\. This array can then be passed into our \verb\SetProperty\ function like so:\newline
+		\verb\SetProperty("model_name", "color", (void*)green, sizeof(float)*4 );\
+\end{itemize}
+
+\tiobox{
+{\tt > player bigbob11.cfg} \\
+{\tt > make bigbob13} \\
+{\tt > ./bigbob13}
+}
+
+		
+\subsection{General Useful Commands}
+
+\subsubsection{Read()}
+To make the proxies update with new sensor data we need to tell the player server to update, we can do this using the PlayerClient object which we used to connect to the server. All we have to do is run the command \verb\playerClient_name.Read()\ every time the data needs updating (where playerClient\_name is the name you gave the PlayerClient object). Until this command is run, the proxies and any sensor information from them will be empty. 
+The devices on a typical robot are asynchronous and the devices in a \plst simulation are also asynchronous, so running the \verb\Read()\ command won't always update everything at the same time, so it may take several calls before some large data structures (such as a camera image) gets updated.
+
+\subsubsection{GetGeom()}
+Most of the proxies have a function called \verb\GetGeom\ or \verb\GetGeometry\ or \verb\RequestGeometry\, or words to that effect. What these functions do is tell the proxy retrieve information about the device, usually its size and pose (relative to the robot). The proxies don't know this by default since this information is specific to the robot or the \plst robot model. If your code needs to know this kind of information about a device then the proxy must run this command first.
+
+\section{Using Proxies: A Case Study}\label{sec:Coding:UsingProxiesExample}
+
+To demonstrate how to write code to control a \pl device or \plst simulation we will use the example robot ``Bigbob'' developed in Sections \ref{sec:BuildingAWorld:BuildingRobot} and \ref{sec:ConfigurationFile} which collects oranges and juice cartons from a factory floor. In previous sections we have developed the Stage model for this robot and its environment and the configuration file to control it. Now we can begin to put everything together to create a working simulation of this robot.
+
+\subsection{The Control Architecture}\label{sec:Coding:UsingProxiesExample:ControlArch}
+To collect rubbish we have three basic behaviours: 
+\begin{itemize}
+	\item Wandering: to search for rubbish. 
+	\item Moving towards item: for when an item is spotted and the robot wants to collect it
+	\item Collecting item: for dealing with collecting items.
+\end{itemize}
+The robot will also avoid obstacles but once this is done it will switch back to its previous behaviour. The control will follow the state transitions shown in Figure \ref{fig:Coding:UsingProxiesExample:ControlArch:Structure}.
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\linewidth]{./pics/coding/arch_structureOA.png}
+	\caption{The state transitions that the Bigbob rubbish collecting robot will follow.}
+	\label{fig:Coding:UsingProxiesExample:ControlArch:Structure}
+\end{figure} 
+
+\subsection{Beginning the Code}\label{sec:Coding:UsingProxiesExample:BeginningCode}
+
+In Section \ref{sec:Coding:ConnectingToServer:Example} we discussed how to connect to the \pl server and proxies attached to the server, and developed the following code:
+\begin{verbatim}
+#include <stdio.h>
+#include <libplayerc++/playerc++.h>
+
+int main(int argc, char *argv[])
+{
+      /*need to do this line in c++ only*/
+      using namespace PlayerCc;
+	
+      PlayerClient    robot("localhost");
+
+      Position2dProxy p2dProxy(&robot,0);
+      RangerProxy     sonarProxy(&robot,0);
+      BlobfinderProxy blobProxy(&robot,0);
+      RangerProxy     laserProxy(&robot,1);
+
+      //some control code
+      return 0;
+}
+\end{verbatim}
+Using our knowledge of the proxies discussed in Section \ref{sec:Coding:InteractingWithProxies} we can build controlling code on top of this basic code. 
+Firstly, it is good practice to enable the motors and request the geometry for all the proxies. This means that the robot will move and that if we need to know about the sensing devices the proxies will have that information available.
+\begin{verbatim}
+//enable motors
+p2dProxy.SetMotorEnable(1);
+
+//request geometries
+p2dProxy.RequestGeom();
+sonarProxy.RequestGeom();
+laserProxy.RequestGeom();
+laserProxy.RequestConfigure();
+//blobfinder doesn't have geometry
+\end{verbatim}
+
+Once things are initialised we can enter the main control loop. At this point we should tell the robot to read in data from its devices to the proxies.
+\begin{verbatim}
+while(true)
+{
+      robot.Read();
+
+      //control code
+}
+\end{verbatim}
+
+\subsection{Wander}
+
+First we will initialise a couple of variables which will be the forward
+speed and the turning speed of the robot, we'll put this with the proxy
+initialisations.
+\begin{verbatim}
+Position2dProxy p2dProxy(&robot,0);
+RangerProxy     sonarProxy(&robot,0);
+BlobfinderProxy blobProxy(&robot,0);
+RangerProxy     laserProxy(&robot,1);
+
+double forwardSpeed, turnSpeed;
+\end{verbatim}
+
+Let's say that Bigbob's maximum speed is 1 metre/second and it can turn 90$^\circ$ a second. We will write a small subfunction to randomly assign forward and turning speeds between 0 and the maximum speeds.
+\begin{verbatim}
+void Wander(double *forwardSpeed, double *turnSpeed)
+{
+      int maxSpeed = 1;
+      int maxTurn = 90;
+      double fspeed, tspeed;
+	
+      //fspeed is between 0 and 10
+      fspeed = rand()%11;
+      //(fspeed/10) is between 0 and 1
+      fspeed = (fspeed/10)*maxSpeed;
+	
+      tspeed = rand()%(2*maxTurn);
+      tspeed = tspeed-maxTurn;
+      //tspeed is between -maxTurn and +maxTurn
+	
+      *forwardSpeed = fspeed;
+      *turnSpeed = tspeed;
+} 
+\end{verbatim}
+In the control loop we include a call to this function and then set the resulting speeds to the motors.
+\begin{verbatim}
+while(true)
+{		
+      // read from the proxies
+      robot.Read();
+
+      //wander
+      Wander(&forwardSpeed, &turnSpeed);
+
+      //set motors
+      p2dProxy.SetSpeed(forwardSpeed, dtor(turnSpeed));
+}
+\end{verbatim}
+The \verb\dtor()\ function is a \pl function that turns a number in degrees into a number in radians. Our calculations have been done in degrees but \verb\SetSpeed\ requires radians, so this function is used to convert between the two.
+At present the motors are being updated every time this control loop executes, and this leads to some erratic behaviour from the robot. Using the \verb\sleep()\\footnote{sleep() is a standard C function and is included in the unistd.h header.} command we will tell the control loop to wait one second between each execution. At this point we should also seed the random number generator with the current time so that the wander behaviour isn't exactly the same each time. For the sleep command we will need to include \verb\unistd.h\ and to seed the random number generator with the current system time we will need to include \verb\time.h\.
+\begin{verbatim}
+#include <stdio.h>
+#include <unistd.h>
+#include <time.h>
+#include <libplayerc++/playerc++.h>
+
+void Wander(double *forwardSpeed, double *turnSpeed)
+{
+      //wander code...
+} 
+
+int main(int argc, char *argv[])
+{	
+      /*need to do this line in c++ only*/
+      using namespace PlayerCc;
+
+      //connect to proxies
+      double forwardSpeed, turnSpeed;
+	
+      srand(time(NULL));
+	
+      //enable motors
+      //request geometries
+	
+      while(true)
+      {		
+            // read from the proxies
+            robot.Read();
+
+            //wander
+            Wander(&forwardSpeed, &turnSpeed);
+		
+            //set motors
+            p2dProxy.SetSpeed(forwardSpeed, dtor(turnSpeed));
+            sleep(1);
+      }
+}
+\end{verbatim}
+
+\subsection{Obstacle Avoidance}
+Now we need to write a subfunction that checks the sonars for any obstacles and amends the motor speeds accordingly.
+\begin{verbatim}
+void AvoidObstacles(double *forwardSpeed, double *turnSpeed, \
+      RangerProxy &sp)
+{
+      //will avoid obstacles closer than 40cm
+      double avoidDistance = 0.4;
+      //will turn away at 60 degrees/sec
+      int avoidTurnSpeed = 60;
+      
+      //left corner is sonar no. 2
+      //right corner is sonar no. 3
+      if(sp[2] < avoidDistance)
+      {
+            *forwardSpeed = 0;
+            //turn right
+            *turnSpeed = (-1)*avoidTurnSpeed;
+            return;
+      }
+      else if(sp[3] < avoidDistance)
+      {
+            *forwardSpeed = 0;
+            //turn left
+            *turnSpeed = avoidTurnSpeed;
+            return;
+      }
+      else if( (sp[0] < avoidDistance) && \
+               (sp[1] < avoidDistance))
+      {
+            //back off a little bit
+            *forwardSpeed = -0.2;
+            *turnSpeed = avoidTurnSpeed;  
+            return;
+      }
+      
+      return; //do nothing
+}
+\end{verbatim}
+This is a very basic obstacle avoidance subfunction will update the motor speeds only if there is an obstacle to avoid. If we call this function just before sending data to the motors then it will overwrite any other behaviours so that the obstacle will be avoided. Once the obstacle is no longer in the way then the robot will continue as it was, this will allow us to transition from any behaviour into obstacle avoidance and then back again, as per the requirement of our control structure. All we need to do now is call this function in our control loop:
+\begin{verbatim}
+while(true)
+{		
+    // read from the proxies
+    robot.Read();
+		
+    //wander
+    Wander(&forwardSpeed, &turnSpeed);
+		
+    //avoid obstacles
+    AvoidObstacles(&forwardSpeed, &turnSpeed, sonarProxy);
+		
+    //set motors
+    p2dProxy.SetSpeed(forwardSpeed, dtor(turnSpeed));
+    sleep(1);
+}
+\end{verbatim}
+
+\subsection{Move To Item}
+For this state we want the robot to move towards a blob that it has spotted. There may be several blobs in its view at once, so we'll tell the robot to move to the largest one because it's probably the closest to the robot. The following subfunction finds the largest blob and turns the robot so that the blob's centre is near the centre of the image. The robot will then move towards the blob.
+\begin{verbatim}
+void MoveToItem(double *forwardSpeed, double *turnSpeed, \
+      BlobfinderProxy &bfp)
+{
+      int i, centre;
+      //how many blobs are there?
+      int noBlobs = bfp.GetCount();
+      playerc_blobfinder_blob_t blob;
+      int turningSpeed = 10;
+      
+      /*number of pixels away from the image centre a blob
+      can be, to be in front of the robot. This is 
+      essentially the margin of error.*/
+      int margin = 10;
+
+      //find the largest blob      
+      int biggestBlobArea = 0;
+      int biggestBlob = 0;
+      
+      for(i=0; i<noBlobs; i++)
+      {
+            //get blob from proxy
+            playerc_blobfinder_blob_t currBlob = bfp[i];
+            
+            if( abs((int)currBlob.area) > biggestBlobArea)
+            {
+                  biggestBlob = i;
+                  biggestBlobArea = currBlob.area;
+            }
+      }
+      blob = bfp[biggestBlob];
+            
+      // find centre of image
+      centre = bfp.GetWidth()/2;
+      
+      //adjust turn to centre the blob in image
+      /*if the blob's centre is within some margin of the image 
+      centre then move forwards, otherwise turn so that it is 
+      centred. */
+      //blob to the left of centre
+      if(blob.x < centre-margin)
+      {
+            *forwardSpeed = 0;
+            //turn left
+            *turnSpeed = turningSpeed;
+      }
+      //blob to the right of centre
+      else if(blob.x > centre+margin)
+      {
+            *forwardSpeed = 0;
+            //turn right
+            *turnSpeed = -turningSpeed;
+      }
+      //otherwise go straight ahead
+      else
+      {
+            *forwardSpeed = 0.5;
+            *turnSpeed = 0;      
+      }
+      
+      return;
+}
+\end{verbatim}
+
+We want the robot to transition to this state whenever an item is seen, so we put a conditional statement in our control loop like so:
+\begin{verbatim}
+if(blobProxy.GetCount() == 0)
+{
+      //wander
+      Wander(&forwardSpeed, &turnSpeed);
+}
+else
+{
+      //move towards the item
+      MoveToItem(&forwardSpeed, &turnSpeed, blobProxy);
+}
+\end{verbatim}
+
+\subsection{Collect Item}\label{sec:Coding:UsingProxiesExample:CollectItem}
+This behaviour will be the most difficult to code because Stage doesn't support pushable objects (the required physics is far too complex), what happens instead is that the robot runs over the object and just jostles it a bit. 
+As a work-around to this problem we will have to somehow find out which item is between Bigbob's teeth so that we can find its ``name'' and then change that item's pose (for which we need the item's name) so that it is no longer in the simulation. In essence, instead of having our robot eat rubbish and store it within its body, what we are doing is making the laser zap the rubbish out of existence.
+
+We can find the name of an item between Bigbob's teeth by cross referencing the robot's pose with the poses of the items in the world to find out which item is nearest the robot's laser. The first step is to create a list of all the items in the world, their names and their poses at initialisation. Since we know the names of the items are ``orange1'' to ``orange4'' and ``carton1'' to ``carton4'', we can find their poses with a simple call to a simulation proxy. We'll have to connect to the simulation proxy with our code first using the line \verb\SimulationProxy simProxy(&robot,0);\, then we can access this information and put it into a struct.
+\begin{verbatim}
+struct Item
+{
+      char name[16];
+      double x;
+      double y;
+}typedef item_t;
+\end{verbatim}
+We can populate the structure with information using the following code:
+\begin{verbatim}
+item_t itemList[8];
+
+void RefreshItemList(item_t *itemList, SimulationProxy &simProxy)
+{
+      int i;
+      	
+      //get the poses of the oranges
+      for(i=0;i<4;i++)
+      {
+            char orangeStr[] = "orange%d";
+            sprintf(itemList[i].name, orangeStr, i+1);
+            double dummy;  //dummy variable, don't need yaws.
+            simProxy.GetPose2d(itemList[i].name, \
+                  itemList[i].x, itemList[i].y, dummy);
+      }
+      	
+      //get the poses of the cartons
+      for(i=4;i<8;i++)
+      {
+            char cartonStr[] = "carton%d";
+            sprintf(itemList[i].name, cartonStr, i-3);
+            double dummy;  //dummy variable, don't need yaws.
+            simProxy.GetPose2d(itemList[i].name, \
+                  itemList[i].x, itemList[i].y, dummy);
+      }
+      
+      return;
+}
+\end{verbatim}
+Here we are making a string of the item names, for example orange1 and storing that in the item's name. We then use this string as an input into the \verb\GetPose2d\ function so that we can also get the item's location in the simulation.
+
+Next we can begin the ``Collect Item'' behaviour, which will be triggered by something breaking the laser beam. When this happens we will check the area around Bigbob's teeth, as indicated by Figure \ref{fig:Coding:UsingProxiesExample:CollectItem:BigbobLaserRadius}. We know the distance from the centre of this search circle to Bigbob's origin (0.625m) and the radius of the search circle (0.375m), we can get the robot's exact pose with the following code.
+\begin{verbatim}
+double x, y, yaw;
+simProxy.GetPose2d("bob1", x, y, yaw);
+\end{verbatim}
+Cross referencing the robot's position with the item positions is a matter
+of trigonometry, so isn't particularly relevant to a manual on \plst. We
+won't reproduce the code here, but the full and final code developed for
+the Bigbob rubbish collecting robot is included in appendix D. The method
+we used is to find the Euclidian distance of the items to the circle
+centre, and the smallest distance is the item we want to destroy. We made a
+subfunction called \verb\FindItem\ that returns the index of the item to be
+destroyed.
+\footnote{We could also equip BigBob with a gripper, and call {\tt
+gripper.close()}, and haul the trash somewhere else to drop it off.  See
+Section \ref{gripperproxy} for more details, and {\tt bigbob11} for an example.}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.7\linewidth]{./pics/coding/bigbob_radius.png}
+	\caption{Where to look for items which may have passed through Bigbob's laser.}
+	\label{fig:Coding:UsingProxiesExample:CollectItem:BigbobLaserRadius}
+\end{figure} 
+
+Now that we can find the item to destroy it's fairly simple to trigger our subfunction when the laser is broken so we can find and destroy an item.
+\begin{verbatim}
+if(laserProxy[90] < 0.25)
+{
+      int destroyThis;
+
+      /*first param is the list of items in the world
+      second is length of this list
+      third parameter is the simulation proxy with 
+      the pose information in it*/
+      destroyThis = FindItem(itemList, 8, simProxy);
+ 
+      //move it out of the simulation
+      simProxy.SetPose2d(itemList[destroyThis].name, -10, -10, 0);
+      RefreshItemList(itemList, simProxy);
+}
+\end{verbatim}
+The laser has 180 samples, so sample number 90 is the one which is perpendicular to Bigbob's teeth. This point returns a maximum of 0.25, so if its range was to fall below this then something has passed through the laser beam. We then find the item closest to the robot's teeth and move that item to coordinate $(-10, -10)$ so it is no longer visible or accessible.
+\newline
+Finally we have a working simulation of a rubbish collecting robot! 
+The full code listing is included in Appendix \ref{app:Dbigbobcode}, 
+the simulation world and configuration files are in appendices 
+\ref{app:Brobotsjunkworld} and \ref{app:Cconfig} respectively.
+
+\tiobox{
+{\tt > player bigbob11.cfg} \\
+{\tt > make bigbob13} \\
+{\tt > ./bigbob13}
+}
+
+
+
+\section{Simulating Multiple Robots}
+Our robot simulation case study only shows how to simulate a single robot in a \plst environment. It's highly likely that a simulation might want more than one robot in it. In this situation you will need to build a model of every robot you need in the worldfile, and then its associated driver in the configuration file. Let's take a look at our worldfile for the case study, we'll add a new model of a new Bigbob robot called ``bob2'':
+\begin{verbatim}
+bigbob
+(
+	name "bob1"
+	pose [-5 -6 45]
+	color "green"
+)
+
+bigbob
+(
+	name "bob2"
+	pose [5 6 225]
+	color "yellow"
+)
+\end{verbatim}
+If there are multiple robots in the simulation, the standard practice is to put each robot on its own port (see Section \ref{sec:ConfigurationFile:DeviceAddress}). To implement this in the configuration file we need to tell \pl which port to find our second robot on:
+\begin{verbatim}
+driver( name "stage" 
+        provides ["6665:position2d:0" "6665:ranger:0"
+        "6665:blobfinder:0" "6665:ranger:1"] 
+        model "bob1" )
+
+driver( name "stage" 
+        provides ["6666:position2d:0" "6666:ranger:0"
+        "6666:blobfinder:0" "6666:ranger:1"] 
+        model "bob2" )
+\end{verbatim}
+If you plan on simulating a large number of robots then it is probably worth writing a script to generate the world and configuration files.
+
+When \plst is started, the \pl server automatically connects to all the used ports in your simulation and you control the robots separately with different PlayerClient objects in your code. For instance:
+\begin{verbatim}
+//first robot
+PlayerClient robot1("localhost", 6665);
+Position2dProxy p2dprox1(&robot1,0);
+RangerProxy sprox1(&robot1,0);
+
+//second robot
+PlayerClient robot2("localhost", 6666);
+Position2dProxy p2dprox2(&robot2,0);
+RangerProxy sprox2(&robot2,0);
+\end{verbatim}
+Each \pl Client represents a robot, this is why when you connect to a proxy
+the PlayerClient is a constructor parameter. Each robot has a proxy for
+each of its devices, no robots share a proxy, so it is important that your
+code connects to every proxy of every robot in order to read the sensor
+information.
+%
+How you handle the extra PlayerClients and proxies is dependent on the
+scale of the simulation and your own personal coding preferences. It's a
+good idea, if there's more than maybe 2 robots in the simulation, to make a
+robot class which deals with connecting to proxies and the server, and
+processes all the information internally to control the robot. Then you can
+create an instance of this class for each simulated
+robot\footnote{obviously the robot's port number would need to be a
+parameter otherwise they'll all connect to the same port and consequently
+the same robot.} and all the simulated robots will run the same code.
+
+An alternative to using a port for each robot is to use the same port but a
+different index. 
+%This will only work if the robots are all the same (or at
+%least use the same interfaces, although different robots could be run on a
+%different ports) and the robots only use one index for each of its devices.
+For example, the Bigbob robot uses interfaces and indexes: position2d:0,
+ranger:0, blobfinder:0 and ranger:0. If we configured two Bigbob robots to
+use the same port but a different index our configuration file would be
+like this: \begin{verbatim}
+
+driver( name "stage" 
+        provides ["6665:position2d:0" "6665:ranger:0" 
+        "6665:blobfinder:0" "6665:ranger:1"] 
+        model "bob1" )
+
+driver( name "stage" 
+        provides ["6665:position2d:1" "6665:ranger:2" 
+        "6665:blobfinder:1" "6665:ranger:3"] 
+        model "bob2" )
+\end{verbatim}
+In our code we could then establish the proxies using only one PlayerClient:
+\begin{verbatim}
+PlayerClient robot("localhost", 6665);
+
+//first robot
+Position2dProxy p2dprox1(&robot,0);
+RangerProxy sprox1(&robot,0);
+
+//second robot
+Position2dProxy p2dprox2(&robot,1);
+RangerProxy sprox2(&robot,2);
+
+//shared Simultion proxy...
+SimulationProxy sim(&robot,0);
+\end{verbatim}
+The main advantage of configuring the robot swarm this way is that it
+allows us to only have one simulation proxy which is used by all robots.
+This is good since there is only ever one simulation window that you can
+interact with and so multiple simulation proxies are unnecessary.
+
+\chapter{Useful Links}
+
+\begin{itemize}
+
+\item Player 2.1.0 Manual \\
+\url{http://playerstage.sourceforge.net/doc/Player-2.1.0/player/}
+
+\item Stage 3.0.1 Manual \\
+\url{http://playerstage.sourceforge.net/doc/stage-3.0.1/}
+
+\item Stage 4.1.1 Manual \\
+\url{http:rtv.github.io/Stage/}
+
+\item Stage 2.0.0 Manual\\
+\url{http://playerstage.sourceforge.net/doc/Stage-2.0.0/}
+
+\item All Player Proxies in C\\
+\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/group__playerc__proxies.html}
+
+\item All Player Proxies in C++\\
+\url{http://playerstage.sourceforge.net/doc/Player3.0.2/player/group__player__clientlib_cplusplus_proxies.html}
+
+\item Interfaces used by Player\\
+\url{http://playerstage.sourceforge.net/doc/Player-3.0.2/player/group__interfaces.html}
+
+\item Older versions of this manual, for Stage 2.1.1 and 3.10\\
+\url{http://www-users.cs.york.ac.uk/~jowen/playerstage-manual.html}
+
+\item Examples of Player clients written in python (C and C++ bindings) and
+      MatLab (using mex files)
+\url{http://turobotics.blogspot.com/2013/08/client-controllers-for-player-302-and.html}
+
+\end{itemize}
+
+
+ 
+\nocite{*}
+\bibliographystyle{IEEEtran}
+\bibliography{manual}
+
+%\chapter{Appendices}
+
+\appendix
+\chapter{Code Examples}
+In this section, I present the highlights of the developed code.  
+
+\section{General Stage Model of Bigbob}\label{app:Abigbob.inc}
+\verbatiminput{./code/Ch5.3/bigbob.inc}
+
+\section{Worldfile, Containing Robot and Items in World}\label{app:Brobotsjunkworld}
+\verbatiminput{./code/Ch5.3/robots_and_junk.world}
+
+\section{Configuration file for Bigbob World}\label{app:Cconfig}
+\verbatiminput{./code/Ch5.3/bigbob.cfg}
+
+\section{Controlling Code for Bigbob Robot Simulation}\label{app:Dbigbobcode}
+\verbatiminput{./code/Ch5.3/bigbob.cc}
+
+
+\comment{
+
+\chapter{Code for examples in Chapter 3}
+\section{code/Ch3/bigbob1.world}
+\verbatiminput{code/Ch3/bigbob1.world}
+\section{code/Ch3/bigbob2.world}
+\verbatiminput{code/Ch3/bigbob2.world}
+\section{code/Ch3/bigbob3.world}
+\verbatiminput{code/Ch3/bigbob3.world}
+\section{code/Ch3/bigbob4.cfg}
+\verbatiminput{code/Ch3/bigbob4.cfg}
+\section{code/Ch3/bigbob4.world}
+\verbatiminput{code/Ch3/bigbob4.world}
+\section{code/Ch3/bigbob4\_camera.cfg}
+\verbatiminput{code/Ch3/bigbob4_camera.cfg}
+\section{code/Ch3/bigbob4\_camera.world}
+\verbatiminput{code/Ch3/bigbob4_camera.world}
+\section{code/Ch3/bigbob4\_fiducial.cfg}
+\verbatiminput{code/Ch3/bigbob4_fiducial.cfg}
+\section{code/Ch3/bigbob4\_fiducial.world}
+\verbatiminput{code/Ch3/bigbob4_fiducial.world}
+\section{code/Ch3/bigbob4\_gripper.cfg}
+\verbatiminput{code/Ch3/bigbob4_gripper.cfg}
+\section{code/Ch3/bigbob4\_gripper.world}
+\verbatiminput{code/Ch3/bigbob4_gripper.world}
+\section{code/Ch3/bigbob5.cfg}
+\verbatiminput{code/Ch3/bigbob5.cfg}
+\section{code/Ch3/bigbob5.world}
+\verbatiminput{code/Ch3/bigbob5.world}
+\section{code/Ch3/bigbob6.cfg}
+\verbatiminput{code/Ch3/bigbob6.cfg}
+\section{code/Ch3/bigbob6.world}
+\verbatiminput{code/Ch3/bigbob6.world}
+\section{code/Ch3/bigbob7.cfg}
+\verbatiminput{code/Ch3/bigbob7.cfg}
+\section{code/Ch3/bigbob7.world}
+\verbatiminput{code/Ch3/bigbob7.world}
+\section{code/Ch3/empty.cfg}
+\verbatiminput{code/Ch3/empty.cfg}
+\section{code/Ch3/empty.world}
+\verbatiminput{code/Ch3/empty.world}
+\section{code/Ch4/bigbob.inc}
+\chapter{Code for examples in Chapter 4}
+\verbatiminput{code/Ch4/bigbob.inc}
+\section{code/Ch4/bigbob8.cfg}
+\verbatiminput{code/Ch4/bigbob8.cfg}
+\section{code/Ch4/bigbob8.world}
+\verbatiminput{code/Ch4/bigbob8.world}
+\section{code/Ch4/map.inc}
+\verbatiminput{code/Ch4/map.inc}
+\chapter{Code for examples in Chapter 5.1}
+\section{code/Ch5.1/Makefile}
+\verbatiminput{code/Ch5.1/Makefile}
+\section{code/Ch5.1/example0.cc}
+\verbatiminput{code/Ch5.1/example0.cc}
+\section{code/Ch5.1/simple.c}
+\verbatiminput{code/Ch5.1/simple.c}
+\section{code/Ch5.1/simple.cfg}
+\verbatiminput{code/Ch5.1/simple.cfg}
+\section{code/Ch5.1/simple.world}
+\verbatiminput{code/Ch5.1/simple.world}
+\chapter{Code for examples in Chapter 5.2}
+\section{code/Ch5.2/Makefile}
+\verbatiminput{code/Ch5.2/Makefile}
+\section{code/Ch5.2/bigbob10.cc}
+\verbatiminput{code/Ch5.2/bigbob10.cc}
+\section{code/Ch5.2/bigbob11.cc}
+\verbatiminput{code/Ch5.2/bigbob11.cc}
+\section{code/Ch5.2/bigbob11.cfg}
+\verbatiminput{code/Ch5.2/bigbob11.cfg}
+\section{code/Ch5.2/bigbob11.world}
+\verbatiminput{code/Ch5.2/bigbob11.world}
+\section{code/Ch5.2/bigbob12.cc}
+\verbatiminput{code/Ch5.2/bigbob12.cc}
+\section{code/Ch5.2/bigbob13.cc}
+\verbatiminput{code/Ch5.2/bigbob13.cc}
+\section{code/Ch5.2/bigbob7.cfg}
+\verbatiminput{code/Ch5.2/bigbob7.cfg}
+\section{code/Ch5.2/bigbob7.world}
+\verbatiminput{code/Ch5.2/bigbob7.world}
+\section{code/Ch5.2/bigbob8.cc}
+\verbatiminput{code/Ch5.2/bigbob8.cc}
+\section{code/Ch5.2/bigbob9.cc}
+\verbatiminput{code/Ch5.2/bigbob9.cc}
+\chapter{Code for examples in Chapter 5.3}
+\section{code/Ch5.3/Makefile}
+\verbatiminput{code/Ch5.3/Makefile}
+\section{code/Ch5.3/bigbob.cc}
+\verbatiminput{code/Ch5.3/bigbob.cc}
+\section{code/Ch5.3/bigbob.cfg}
+\verbatiminput{code/Ch5.3/bigbob.cfg}
+\section{code/Ch5.3/bigbob.inc}
+\verbatiminput{code/Ch5.3/bigbob.inc}
+\section{code/Ch5.3/robots\_and\_junk.world}
+\verbatiminput{code/Ch5.3/robots_and_junk.world}
+}
+
+\chapter{Change Log}
+\begin{itemize}
+\item Manual Version 4 - Kevin Nickels - Covers Stage 4.1.1 and Player 
+3.2.0 - August 7 2013
+\item Update to Player 3.2.0 - Jenny Owen - ??
+\item Manual Version 2 - Jenny Owen - Covers Stage 3.2.1 and Player 2.1.1
+- April 2010
+\item Manual Version 1 - Jenny Owen - Covers Stage 2.1.1 and 3.1.0 - July 10, 2009
+\end{itemize}
+
+\end{document}
+
+
